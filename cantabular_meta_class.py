@@ -2,24 +2,22 @@ import datetime, os, time, requests
 from cantabular_request import get_variable_details
 from data_dict_dicts import get_topic_dict
 
-environment = "test"
+environment = "sandbox"
 
-collection_name = "dd test"
+collection_name = "Data dictionary"
 
-list_of_all_topics = ['demography', 'international migration', 'UK armed forces veterans'] # used for updating list of topics page
+list_of_all_topics = ['demography', 'international migration', 'UK armed forces veterans', 'eilr', 'labour market', 'travel to work'] 
 
-
-# TODO - add some kind of tagging system
 pages_to_run = {
         "dd_landing_page": False, # only - True/False
         "variables_by_topic_landing_page": False, # only - True/False TODO -> only True if all topics included in topic_dict
         "list_of_variables_landing_page": True, # only - True/False
         "variables_page": True, # only - True/False
-        "topics": ["UK armed forces veterans"], # * for all, otherwise specify
-        "variables": ["uk_armed_forces"] # * for all, otherwise specify
+        "classifications_page": True, # only - True/False
+        "topics": ['eilr', 'labour market', 'travel to work'], # * for all, otherwise specify
+        "variables": ["*"] # * for all, otherwise specify
         }
 
-#topic_dict = get_topic_dict(pages_to_run['topics'], variables=pages_to_run['variables'])
 
 class making_request():
     # class object that makes requests
@@ -31,20 +29,20 @@ class making_request():
         # returns url if environment is set to test
         
         if self.environment == 'test':
-            '''
+            """
             if request_type.lower() == 'get':
                 print(f"GET request to {url}")
                 
             elif request_type.lower() == 'post':
                 print(f"POST request to {url}")
-            '''
+            """
             return
                 
         if request_type.lower() == 'get':
             response_dict = self.get_curl_request(url)
             
         elif request_type.lower() == 'post':
-            response_dict = self.post_curl_request(url,  **kwargs)
+            response_dict = self.post_curl_request(url, **kwargs)
             
         return response_dict
 
@@ -65,7 +63,7 @@ class making_request():
             return
         
     def send_for_review(self, url):
-        # all POSTs to send page to reviewed status are the same 
+        # all POST requests to send page to reviewed status are the same 
         
         if self.environment == 'test':
             #print("Test reviewed")
@@ -96,14 +94,17 @@ class data_dictionary_upload(making_request):
         self.environment = environment
         self.dict_of_pages_to_upload = dict_of_pages_to_upload
         self.collection_name = collection_name
+        self.release_date = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%dT00:00:00.000Z')
+        self.languages = ['en', 'cy']
         
         self.get_access_token()
         self.topic_dict = get_topic_dict(self.dict_of_pages_to_upload['topics'], variables=self.dict_of_pages_to_upload['variables'])
-        
-        self.get_collection_id()
-        self.release_date = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%dT00:00:00.000Z')
-    
+        self.variables_uploaded = []
+        self.classifications_uploaded = []
+          
     def run(self):
+        self.get_collection_id()
+        
         if self.dict_of_pages_to_upload['dd_landing_page']:
             # creates dd landing page - mostly will be left untouched
             self.create_dd_landing_page()
@@ -129,14 +130,18 @@ class data_dictionary_upload(making_request):
                     print(variable)
                     try:
                         variable_details = get_variable_details(variable)
-                        self.create_variable_page(variable_details)
                     except:
                         print(f'could not find varibale - {variable}')
+                        
+                    self.create_variable_page(variable_details)
+                   
+                    if self.dict_of_pages_to_upload['classifications_page']:
+                        if variable_details['en']['has_multi_classifications']:
+                            self.create_variable_classifications_page(variable_details)
+                            
                     print('---')
                     time.sleep(1)
-        
-        
-    
+                        
     def set_up_url(self):
         if self.environment == "prod" or self.environment == "test":
             self.url = 'http://localhost:10800/v1'
@@ -176,6 +181,23 @@ class data_dictionary_upload(making_request):
                 raise Exception("will need to manually assign access_token")
             self.headers = {"X-Florence-Token": access_token}
             
+    def create_collection(self, collection_name):
+        if self.environment == 'test':
+            print("test collection created")
+            self.collection_id = 'collection_id'
+            return
+        
+        elif self.environment == "prod":
+            collection_url = f"{self.url}/collection"
+            
+        elif self.environment == "sandbox":
+            collection_url = f"{self.url}/dataset/collection"
+        
+        r = requests.post(collection_url, headers=self.headers, json={'name': collection_name})
+        print(f"POST returned - {r.status_code}")
+        print(f"collection '{collection_name}' created")
+        return
+    
     def get_collection_id(self):
         if self.environment == 'test':
             self.collection_id = 'collection_id'
@@ -187,7 +209,6 @@ class data_dictionary_upload(making_request):
                 collection_id = collection["id"]
                 break
         
-        # TODO - should create collection if doesnt exist?
         self.collection_id = collection_id
             
     def get_all_collections(self):
@@ -208,22 +229,20 @@ class data_dictionary_upload(making_request):
         # POSTs to /census
         uri_name = 'census2021dictionary'
         
-        for language in ('en', 'cy'):
-            if language == 'cy':
-                return
+        for language in self.languages:
             
             page_info = {
                     'en': {
                             'page_title': 'Census 2021 dictionary',
-                            'page_summary': 'Detailed information about variables, definitions and classifications to help when using Census 2021 data.',
+                            'page_summary': 'Definitions, variables and classifications to help when using Census 2021 data.',
                             'section_title': 'Variables by topic',
-                            'section_summary': 'Lists variables by topic to help when using Census 2021 data.'
+                            'section_summary': 'Variables for use with research and analysis using Census 2021 data.'
                             },
                     'cy': {
                             'page_title': 'Geiriadur Cyfrifiad 2021', 
-                            'page_summary': 'Gwybodaeth fanwl am newidynnau, diffiniadau a dosbarthiadau er mwyn helpu wrth ddefnyddio data Cyfrifiad 2021.',
+                            'page_summary': 'Diffiniadau, newidynnau a dosbarthiadau er mwyn helpu wrth ddefnyddio data Cyfrifiad 2021.',
                             'section_title': 'Newidynnau yn ôl pwnc',
-                            'section_summary': 'Rhestr o newidynnau yn ôl pwnc er mwyn helpu wrth ddefnyddio data Cyfrifiad 2021.'
+                            'section_summary': "Newidynnau i'w defnyddio wrth ymchwilio a dadansoddi gan ddefnyddio data Cyfrifiad 2021."
                             }
                     }
             
@@ -296,18 +315,17 @@ class data_dictionary_upload(making_request):
         
         dd_location = 'census2021dictionary'
         uri_name = 'variablesbytopic'
-        for language in ('en', 'cy'):
-            if language == 'cy':
-                return
-    
+        
+        for language in self.languages:
+
             page_info = {
                     'en': {
                             'page_title': 'Variables by topic',
-                            'page_summary': 'Lists variables by topic to help when using Census 2021 data.'
+                            'page_summary': 'Variables for use with research and analysis using Census 2021 data.'
                             },
                     'cy': {
                             'page_title': 'Newidynnau yn ôl pwnc',
-                            'page_summary': 'Rhestr o newidynnau yn ôl pwnc er mwyn helpu wrth ddefnyddio data Cyfrifiad 2021.'
+                            'page_summary': "Newidynnau i'w defnyddio wrth ymchwilio a dadansoddi gan ddefnyddio data Cyfrifiad 2021."
                             }
                     }
             page_title = page_info[language]['page_title']
@@ -375,35 +393,36 @@ class data_dictionary_upload(making_request):
         
         topic_location = f"census2021dictionary/variablesbytopic"
         uri_name = self.topic_dict[topic]['en']['uri_ending_topic_page']
-        for language in ('en', 'cy'):
-            if language == 'cy':
-                return
+        
+        for language in self.languages:
         
             page_title = self.topic_dict[topic][language]['title_for_page']
             page_summary = self.topic_dict[topic][language]['summary_for_page']
+            topic_heading = self.topic_dict[topic][language]['title_topic_page']
             
             if language == 'en':
-                topic_heading = self.capitalise_uk(self.topic_dict[topic][language]['title_topic_page'].lower())
                 markdown = f"""
-## **List of {topic_heading}**  
+## **{topic_heading}**  
 
 """
             elif language == 'cy':
-                topic_heading = self.capitalise_uk(self.topic_dict[topic][language]['title_topic_page'].lower())
                 markdown = f"""
-## **Rhestr o {topic_heading}**  
+## **{topic_heading}**  
       
 """
             for variable in self.topic_dict[topic]['en']['list_of_variables']:
-                topic_for_url = topic.lower().replace(' ', '')
-                variable_for_url = self.topic_dict[topic]['en']['list_of_variables'][variable].lower().replace(' ', '')
-                link = f"/census/census2021dictionary/variablesbytopic/{topic_for_url}variablescensus2021/{variable_for_url}"
+                topic_for_url = uri_name
+                variable_for_url = self.slugize(self.topic_dict[topic]['en']['list_of_variables'][variable])
+                link = f"/census/census2021dictionary/variablesbytopic/{topic_for_url}/{variable_for_url}"
                 # TODO - sort hardcode
                 if variable == 'residence_type':
                     link = "/census/census2021dictionary/variablesbytopic/demographyvariablescensus2021/residencetype"
                 # TODO - sort hardcode
                 if variable == 'legal_partnership_status':
                     link = "/census/census2021dictionary/variablesbytopic/demographyvariablescensus2021/maritalandcivilpartnershipstatus"
+                # TODO - sort hardcode
+                if variable == 'resident_age':
+                    link = "/census/census2021dictionary/variablesbytopic/demographyvariablescensus2021/age"
                 
                 markdown += f"* [{self.topic_dict[topic][language]['list_of_variables'][variable]}]({link})  \n"
             
@@ -440,7 +459,7 @@ class data_dictionary_upload(making_request):
                 content_path = f"/content/{self.collection_id}?uri={uri}"
                 review_path = f"/complete/{self.collection_id}?uri={uri}"
             
-            elif environment == "sandbox":
+            elif self.environment == "sandbox":
                 content_path = f"/zebedee/content/{self.collection_id}?uri={uri}"
                 review_path = f"/zebedee/complete/{self.collection_id}?uri={uri}"
                 
@@ -452,17 +471,22 @@ class data_dictionary_upload(making_request):
             self.send_for_review(review_url)
             print(f"{topic} - list of variables page reviewed")
             
-        return
+        return markdown
     
     def create_variable_page(self, variable_details):
         # currently creates a static_page 
-        for language in ('en', 'cy'):
-            if language == 'cy':
-                return
+        
+        variable_mnemonic = variable_details['en']['mnemonic']
+        if variable_mnemonic in self.variables_uploaded:
+            # stops any duplication of variable pages
+            print(f"already uploaded")
+            return
+        
+        for language in self.languages:
             
             page_title = variable_details[language]['title']
-            uri_name = f"{variable_details['en']['title'].lower().replace(' ', '')}" # used for url
-            topic = variable_details['en']['topic_label'].lower().replace(' ', '')
+            uri_name = self.slugize(variable_details['en']['title']) # used for url
+            topic = self.slugize(variable_details['en']['topic_label'])
                 
             markdown = self.create_static_page_markdown(variable_details, language)
             
@@ -505,7 +529,7 @@ class data_dictionary_upload(making_request):
                 content_path = f"/content/{self.collection_id}?uri={uri}"
                 review_path = f"/complete/{self.collection_id}?uri={uri}"
             
-            elif environment == "sandbox":
+            elif self.environment == "sandbox":
                 content_path = f"/zebedee/content/{self.collection_id}?uri={uri}"
                 review_path = f"/zebedee/complete/{self.collection_id}?uri={uri}"
                 
@@ -516,9 +540,83 @@ class data_dictionary_upload(making_request):
             print(f"Page created for {variable_details['en']['title']} - {language}")
             self.send_for_review(review_url)
             print(f"Page reviewed")
+            
+            self.variables_uploaded.append(variable_mnemonic)
         
         return
     
+    def create_variable_classifications_page(self, variable_details):
+        variable_mnemonic = variable_details['en']['mnemonic']
+        if variable_mnemonic in self.classifications_uploaded:
+            # stops any duplication of variable pages
+            print(f"classification already uploaded")
+            return
+        
+        for language in self.languages:
+            if language == 'en':
+                page_title = f"{variable_details[language]['title']} classifications"
+            elif language == 'cy':
+                page_title = f"Dosbarthiadau {self.capitalise_text(variable_details[language]['title'].lower(), 'cy')}"
+            uri_name = f"{self.slugize(variable_details['en']['title'])}/classifications" # used for url
+            topic = self.slugize(variable_details['en']['topic_label'])
+            
+            markdown = self.markdown_multi_classifications(variable_details, language)
+            
+            # static_page page
+            metadata_payload = {
+                    "description":{
+                            "title":page_title,
+                            "summary":"",
+                            "releaseDate":self.release_date,
+                            "keywords":[],
+                            "metaDescription":"",
+                            "language":language,
+                            "survey":"census"
+                            },
+                    "markdown":[markdown],
+                    "charts":[],
+                    "tables":[],
+                    "equations":[],
+                    "images":[],
+                    "downloads":[],
+                    "type":"static_page",
+                    "anchors":[],
+                    "links":[],
+                    "fileName":uri_name
+                    }
+                    
+            if language == 'en':
+                uri = f"census/census2021dictionary/variablesbytopic/{topic}variablescensus2021/{uri_name}/data.json"
+                # TODO - sort hardcode
+                if variable_details['en']['title'] == 'Legal partnership status':
+                    uri = "census/census2021dictionary/variablesbytopic/demographyvariablescensus2021/maritalandcivilpartnershipstatus/classifications/data.json"
+            
+            elif language == 'cy':
+                uri = f"census/census2021dictionary/variablesbytopic/{topic}variablescensus2021/{uri_name}/data_cy.json"
+                # TODO - sort hardcode
+                if variable_details['en']['title'] == 'Legal partnership status':
+                    uri = "census/census2021dictionary/variablesbytopic/demographyvariablescensus2021/maritalandcivilpartnershipstatus/classifications/data_cy.json"
+            
+            if self.environment == "prod" or self.environment == "test":
+                content_path = f"/content/{self.collection_id}?uri={uri}"
+                review_path = f"/complete/{self.collection_id}?uri={uri}"
+            
+            elif self.environment == "sandbox":
+                content_path = f"/zebedee/content/{self.collection_id}?uri={uri}"
+                review_path = f"/zebedee/complete/{self.collection_id}?uri={uri}"
+                
+            content_url = f"{self.url}{content_path}"
+            review_url = f"{self.url}{review_path}"
+                
+            self.curl_request('post', content_url, json=metadata_payload)
+            print(f"Classifications page created for {variable_details['en']['title']} - {language}")
+            self.send_for_review(review_url)
+            print(f"Page reviewed")
+            
+            self.classifications_uploaded.append(variable_mnemonic)
+        
+        return
+            
     def create_static_page_markdown(self, variable_details, language):
         variable_type = variable_details['en']['type_label']
         
@@ -554,7 +652,7 @@ class data_dictionary_upload(making_request):
 
 Total number of categories: {number_of_categories} 
 
-{self.classification_text_builder(variable_details, 'en')}
+{self.classification_text_builder(variable_details, 'en', variable_details['en']['has_multi_classifications'])}
 {self.quality_information_text_builder(variable_details, 'en')}
 ## **Question asked**
 
@@ -598,7 +696,7 @@ This information is not yet available. Find out more about [UK Census data.]({co
 
 Cyfanswm nifer y categorïau: {number_of_categories} 
 
-{self.classification_text_builder(variable_details, 'cy')}
+{self.classification_text_builder(variable_details, 'cy', variable_details['en']['has_multi_classifications'])}
 {self.quality_information_text_builder(variable_details, 'cy')}
 ## **Cwestiwn a ofynnwyd**
 
@@ -652,7 +750,7 @@ Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Un
 
 Total number of categories: {number_of_categories} 
 
-{self.classification_text_builder(variable_details, 'en')}
+{self.classification_text_builder(variable_details, 'en', variable_details['en']['has_multi_classifications'])}
 {self.quality_information_text_builder(variable_details, 'en')}
 ## **Background**
 
@@ -689,7 +787,7 @@ This information is not yet available. Find out more about [UK Census data.]({co
 
 Cyfanswm nifer y categorïau: {number_of_categories} 
 
-{self.classification_text_builder(variable_details, 'cy')}
+{self.classification_text_builder(variable_details, 'cy', variable_details['en']['has_multi_classifications'])}
 {self.quality_information_text_builder(variable_details, 'cy')}
 ## **Cefndir**
 
@@ -710,11 +808,93 @@ Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Un
 """
         return markdown
     
-    def classification_text_builder(self, variable_details, language):
+    def markdown_multi_classifications(self, variable_details, language):
+        # creates the markdown for /classifications page
+        number_of_classifications = len(variable_details['en']['multi_classifications'])
+        variable_title = variable_details[language]['title']
+        
+        if language == 'en':
+    
+            markdown = f""" 
+**Applicability:** {variable_details['en']['statistical unit']}   
+**Type:** {variable_details['en']['type_label']}  
+
+## **Overview**
+
+The {self.capitalise_text(variable_title.lower(), 'en')} variable has {self.number_to_text(number_of_classifications, 'en')} classifications that can be used when analysing Census 2021 data.
+
+When data are sorted, we group categories about the same topic together into a variable. A group of categories is called a “classification.”  There can be more than one classification about the same topic and each one is different. You should choose the one that is the most suitable for your research and analysis.
+
+"""
+        elif language == 'cy': 
+            markdown = f"""
+**Cymhwysedd:** {variable_details['cy']['statistical unit']}   
+**Math:** {variable_details['cy']['type_label']} 
+
+## **Trosolwg** 
+
+Mae gan newidyn {self.capitalise_text(variable_title.lower(), 'cy')} {self.number_to_text(number_of_classifications, 'cy')} o ddosbarthiadau y gellir eu defnyddio wrth ddadansoddi data Cyfrifiad 2021.
+
+Pan gaiff data eu didoli, byddwn yn grwpio categorïau am yr un pwnc gyda'i gilydd. “Dosbarthiad” yw'r enw am grŵp o gategorïau.  Mae'n bosibl cael mwy nag un dosbarthiad am yr un pwnc ac mae pob un yn wahanol. Dylech ddewis yr un sydd fwyaf addas ar gyfer eich ymchwil a'ch dadansoddiad.
+
+"""
+    
+        for classification in variable_details['en']['multi_classifications']:
+            # build a new 'variable dict to send to classification_text_builder
+            mnemonic = variable_details[language]['mnemonic']
+            classification_code = classification.split(f"{mnemonic}_")
+            if len(classification_code) == 2:
+                classification_code = f" {classification_code[-1]}"
+            
+            elif len(classification_code) == 1:
+                classification_code = ''
+                
+            no_of_categories = len(variable_details['en']['classifications'][classification]['category'])
+                
+            if language == 'en':
+                markdown += f"""
+## **{variable_title} classification{classification_code}**
+                
+**Mnemonic:** {classification}
+
+Total number of categories: {no_of_categories}
+"""
+            
+            elif language == 'cy':
+                markdown += f"""
+## **Dosbarthiad{classification_code} {self.capitalise_text(variable_title.lower(), 'cy')}** 
+                
+**Cofair:** {classification}
+
+Cyfanswm nifer y categorïau: {no_of_categories}
+"""
+            
+            variable_details_to_send = variable_details.copy()
+            variable_details_to_send['en']['preferred_classification'] = classification
+            variable_details_to_send['cy']['preferred_classification'] = classification
+            
+            classification_text = self.classification_text_builder(variable_details_to_send, language, False)
+            markdown += classification_text
+        
+        markdown += """
+   
+"""
+        return markdown
+    
+    def classification_text_builder(self, variable_details, language, multiple_classifications):
         # creates the classification section of the markdown
         
         classification_mnemonic = variable_details['en']['preferred_classification']
         
+        # does this variable have multiple classifications
+        if multiple_classifications:
+            topic = self.slugize(variable_details['en']['topic_label'])
+            uri_name = f"{self.slugize(variable_details['en']['title'])}"
+            multi_classifications_link = f"/census/census2021dictionary/variablesbytopic/{topic}variablescensus2021/{uri_name}/classifications"
+            if variable_details['en']['title'] == 'Legal partnership status':
+                multi_classifications_link = "/census/census2021dictionary/variablesbytopic/demographyvariablescensus2021/maritalandcivilpartnershipstatus/classifications"
+            
+                
         if language == 'en':
         
             text = f"""
@@ -724,6 +904,9 @@ Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Un
             for key in variable_details['en']['classifications'][classification_mnemonic]['category'].keys():
                 text += f"| {key} | {variable_details['en']['classifications'][classification_mnemonic]['category'][key]} | \n"
             
+            if multiple_classifications:
+                text += f"\nView all [{variable_details['en']['title'].lower()} classifications.]({multi_classifications_link}) \n"
+            
         elif language == 'cy':
         
             text = f"""
@@ -732,6 +915,9 @@ Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Un
 """
             for key in variable_details['cy']['classifications'][classification_mnemonic]['category'].keys():
                 text += f"| {key} | {variable_details['cy']['classifications'][classification_mnemonic]['category'][key]} | \n"
+            
+            if multiple_classifications:
+                text += f"\nGweld pob dosbarthiad [{variable_details['cy']['title'].lower()}.]({multi_classifications_link}) \n"
             
         return text
     
@@ -768,16 +954,15 @@ Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Un
     
     def quality_information_text_builder(self, variable_details, language):
         variable_mnemonic = variable_details['en']['mnemonic']
-        if variable_mnemonic in ('legal_partnership_status', 'hh_family_composition', 'passports_all', 'resident_age'):
-            comparison_link = "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/demographyandmigrationqualityinformationforcensus2021"
-            if language == 'en': #TODO - is wording for the link included in metadata model or not
+        
+        if variable_details['en']['has_quality_information']:
+            
+            if language == 'en': # TODO - should wording for the link included in metadata model or not
                 text = f"""
 
 ## **Quality information**
 
 {variable_details['en']['quality_statement']}
-
-[Read more in our Demography and migration quality information for Census 2021 methodology.]({comparison_link})
 """
 
             elif language == 'cy':
@@ -786,18 +971,56 @@ Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Un
 ## **Ansawdd gwybodaeth**
 
 {variable_details['cy']['quality_statement']}
+"""
 
+            topic = variable_details['en']['topic_label']
+            if topic == 'Demography':
+                comparison_link = "/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/demographyandmigrationqualityinformationforcensus2021"
+            
+                if language == 'en':
+                    text += f"""
+[Read more in our Demography and migration quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
 [Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg demograffeg a mudo ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """
 
-        elif variable_mnemonic in ('hh_hrp_veteran', 'hh_veterans', 'uk_armed_forces'):
+            if topic == 'UK armed forces veterans':
+                comparison_link = "/peoplepopulationandcommunity/armedforcescommunity/methodologies/ukarmedforcesveteransqualityinformationforcensus2021" 
+            
+                if language == 'en':
+                    text += f"""
+[Read more in our UK armed forces veterans quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg cyn-filwyr lluoedd arfog y Deyrnas Unedig ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+"""
+
+            elif topic == 'Ethnic group, national identity, language and religion':
+                comparison_link = "/peoplepopulationandcommunity/culturalidentity/ethnicity/methodologies/ethnicgroupnationalidentitylanguageandreligionqualityinformationforcensus2021" 
+                
+                if language == 'en':
+                    text += f"""
+[Read more in our Ethnic group, national identity, language and religion quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg grŵp ethnig, hunaniaeth genedlaethol, iaith a chrefydd ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+""" 
+
+        else:
+            text = ""
+            
+        if variable_mnemonic in ('religion_tb'):
             comparison_link = ""
             if language == 'en':
                 text = f"""
 
 ## **Quality information**
 
-{variable_details['en']['quality_statement']}
+There are some quality issues in the data that may affect how you use the data.
 """
         
             elif language == 'cy':
@@ -805,25 +1028,102 @@ Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Un
 
 ## **Ansawdd gwybodaeth**
 
-{variable_details['cy']['quality_statement']}
+Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defnyddio’r data.
 """
-
-        else:
-            text = ""
         
         return text
     
-    def capitalise_uk(self, text):
-        # TODO - make more robust so has no side effects
-        if "uk " in text:
-            text = text.replace("uk ", "UK ")
-        if "deyrnas unedig" in text:
-            text = text.replace("deyrnas unedig", "Deyrnas Unedig")
+    def capitalise_text(self, text, language):
+        # some text is lower cased but requires certain words to be capitalised
+            
+        if language == 'en':
+            if "uk " in text:
+                text = text.replace("uk ", "UK ")
+                
+            if "english" in text:
+                text = text.replace("english", "English")
+                
+            if "welsh" in text:
+                text = text.replace("welsh", "Welsh")
+        
+        elif language == 'cy':
+            if "deyrnas unedig" in text:
+                text = text.replace("deyrnas unedig", "Deyrnas Unedig")
+                   
+            if "saesneg" in text:
+                text = text.replace("saesneg", "Saesneg")
+                
+            if "cymraeg" in text:
+                text = text.replace("cymraeg", "Cymraeg")
+            
         return text
-
+    
+    def slugize(self, text):
+        new_text = text.replace(' ', '').replace(',', '').replace('(', '').replace(')', '').lower()
+        return new_text
+    
+    def number_to_text(self, number, language):
+        # numbers < 10 are changed to words
+        # numbers > 10 remain as numbers
+        number = str(number)
+        if language == 'en':
+            lookup = {
+                    '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five',
+                    '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine'
+                    }
+        elif language == 'cy':
+            lookup = {
+                    '1': 'un', '2': 'dau', '3': 'tri', '4': 'pedwar', '5': 'pump',
+                    '6': 'chwech', '7': 'saith', '8': 'wyth', '9': 'naw'
+                    }
+            
+        return lookup.get(number, number)
+    
+    
     
 
 
 if __name__ == '__main__':
     dd = data_dictionary_upload(environment, collection_name, pages_to_run)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -1,10 +1,10 @@
 # reading in from csvs
 import pandas as pd
 
-location = "cantabular/ar2776-c21ew_metadata-v1-3_cantab_20221108-28/"
+location = "cantabular/ar2776-c21ew_metadata-v1-3_cantab_20221201-32/"
 
 def run():
-    variable = "uk_armed_forces"
+    variable = "transport_to_workplace"
     variable_details = get_variable_details(variable)
     return variable_details
 
@@ -15,36 +15,38 @@ def get_variable_details(variable):
     # converted to a loop through when pulling all variables
     variable_df = pd.read_csv(f"{location}Variable.csv", dtype=str)
     df = variable_df[variable_df["Variable_Mnemonic"] == variable]
-    #df = variable_df[variable_df["Variable_Title"] == variable]
+    
     if len(df) == 0:
         raise Exception(f"Cannot find variable {variable}")
     assert len(df) == 1, f"found more than one line of data for the variable {variable}"
-    i = df.index[0]
-    #variable_mnemonic = df.loc[i]['Variable_Mnemonic']
+
     variable_mnemonic = variable
     
-    variable_details['en']['title'] = df.loc[i]['Variable_Title']
-    variable_details['en']['mnemonic'] = df.loc[i]['Variable_Mnemonic']
-    variable_details['en']['2011 mnemonic'] = df.loc[i]['Variable_Mnemonic_2011']
-    variable_details['en']['type_code'] = df.loc[i]['Variable_Type_Code']
-    variable_details['en']['topic_code'] = df.loc[i]['Topic_Mnemonic']
-    variable_details['en']['description'] = df.loc[i]['Variable_Description']
-    variable_details['en']['number of classifications'] = df.loc[i]['Number_Of_Classifications']
-    variable_details['en']['statistical unit'] = df.loc[i]['Statistical_Unit']
-    variable_details['en']['comparability'] = df.loc[i]['Comparability_Comments']
-    variable_details['en']['quality_statement'] = df.loc[i]['Quality_Statement_Text']
+    variable_details['en']['title'] = df.iloc[0]['Variable_Title'].strip()
+    variable_details['en']['mnemonic'] = df.iloc[0]['Variable_Mnemonic']
+    variable_details['en']['2011 mnemonic'] = df.iloc[0]['Variable_Mnemonic_2011']
+    variable_details['en']['type_code'] = df.iloc[0]['Variable_Type_Code']
+    variable_details['en']['topic_code'] = df.iloc[0]['Topic_Mnemonic']
+    variable_details['en']['description'] = df.iloc[0]['Variable_Description']
+    variable_details['en']['number of classifications'] = df.iloc[0]['Number_Of_Classifications']
+    variable_details['en']['statistical unit'] = df.iloc[0]['Statistical_Unit']
+    variable_details['en']['comparability'] = df.iloc[0]['Comparability_Comments']
+    variable_details['en']['quality_statement'] = df.iloc[0]['Quality_Statement_Text']
     variable_details['en']['preferred_classification'] = classification_to_use(variable_details['en']['mnemonic'])
+    variable_details['en']['multi_classifications'] = multi_classifications(variable_details['en']['mnemonic'])
+    variable_details['en']['has_multi_classifications'] = has_multi_classifications(variable_details['en']['multi_classifications'])
+    variable_details['en']['has_quality_information'] = has_quality_information(variable_details['en']['quality_statement'])
     
-    variable_details['cy']['title'] = df.loc[i]['Variable_Title_Welsh']
-    variable_details['cy']['mnemonic'] = df.loc[i]['Variable_Mnemonic']
-    variable_details['cy']['2011 mnemonic'] = df.loc[i]['Variable_Mnemonic_2011']
-    variable_details['cy']['type_code'] = df.loc[i]['Variable_Type_Code']
-    variable_details['cy']['topic_code'] = df.loc[i]['Topic_Mnemonic']
-    variable_details['cy']['description'] = df.loc[i]['Variable_Description_Welsh']
-    variable_details['cy']['number of classifications'] = df.loc[i]['Number_Of_Classifications']
-    variable_details['cy']['statistical unit'] = english_to_welsh(df.loc[i]['Statistical_Unit'])
-    variable_details['cy']['comparability'] = df.loc[i]['Comparability_Comments_Welsh']
-    variable_details['cy']['quality_statement'] = quality_information_welsh(df.loc[i]['Variable_Mnemonic']) # does not currently exist in model
+    variable_details['cy']['title'] = df.iloc[0]['Variable_Title_Welsh'].strip()
+    variable_details['cy']['mnemonic'] = df.iloc[0]['Variable_Mnemonic']
+    variable_details['cy']['2011 mnemonic'] = df.iloc[0]['Variable_Mnemonic_2011']
+    variable_details['cy']['type_code'] = df.iloc[0]['Variable_Type_Code']
+    variable_details['cy']['topic_code'] = df.iloc[0]['Topic_Mnemonic']
+    variable_details['cy']['description'] = df.iloc[0]['Variable_Description_Welsh']
+    variable_details['cy']['number of classifications'] = df.iloc[0]['Number_Of_Classifications']
+    variable_details['cy']['statistical unit'] = english_to_welsh(df.iloc[0]['Statistical_Unit'])
+    variable_details['cy']['comparability'] = df.iloc[0]['Comparability_Comments_Welsh']
+    variable_details['cy']['quality_statement'] = quality_information_welsh(df.iloc[0]['Variable_Mnemonic']) # does not currently exist in model
     
     del variable_df
     
@@ -69,8 +71,8 @@ def get_variable_details(variable):
     topic_dict['cy'] = dict(zip(list(topic_df['Topic_Mnemonic']), list(topic_df['Topic_Description_Welsh'])))
     del topic_df
     
-    variable_details['en']['topic_label'] = topic_dict['en'][variable_details['en']['topic_code']]
-    variable_details['cy']['topic_label'] = topic_dict['cy'][variable_details['cy']['topic_code']]
+    variable_details['en']['topic_label'] = topic_dict['en'][variable_details['en']['topic_code']].strip()
+    variable_details['cy']['topic_label'] = topic_dict['cy'][variable_details['cy']['topic_code']].strip()
     del topic_dict
     
     #####
@@ -111,16 +113,16 @@ def get_variable_details(variable):
         question_id = question_mapping_dict[variable_mnemonic]
         question_variable_df = question_df[question_df['Question_Code'] == question_id]
         assert len(question_variable_df) == 1, f"found more than one line of data for the question_variable_df"
-        i = question_variable_df.index[0]
+
         variable_details['en']['question'] = {}
-        variable_details['en']['question']['question'] = question_variable_df.loc[i]['Question_Label']
-        variable_details['en']['question']['reason'] = question_variable_df.loc[i]['Reason_For_Asking_Question']
-        variable_details['en']['question']['first_asked'] = question_variable_df.loc[i]['Question_First_Asked_In_Year']
+        variable_details['en']['question']['question'] = question_variable_df.iloc[0]['Question_Label']
+        variable_details['en']['question']['reason'] = question_variable_df.iloc[0]['Reason_For_Asking_Question']
+        variable_details['en']['question']['first_asked'] = question_variable_df.iloc[0]['Question_First_Asked_In_Year']
         
         variable_details['cy']['question'] = {}
-        variable_details['cy']['question']['question'] = question_variable_df.loc[i]['Question_Label_Welsh']
-        variable_details['cy']['question']['reason'] = question_variable_df.loc[i]['Reason_For_Asking_Question_Welsh']
-        variable_details['cy']['question']['first_asked'] = question_variable_df.loc[i]['Question_First_Asked_In_Year']
+        variable_details['cy']['question']['question'] = question_variable_df.iloc[0]['Question_Label_Welsh']
+        variable_details['cy']['question']['reason'] = question_variable_df.iloc[0]['Reason_For_Asking_Question_Welsh']
+        variable_details['cy']['question']['first_asked'] = question_variable_df.iloc[0]['Question_First_Asked_In_Year']
     
     # find where question comes from
     del question_df, question_mapping_dict
@@ -150,7 +152,9 @@ def quality_information_welsh(mnemonic):
             'resident_age': "Mae'r amcangyfrifon ar gyfer un flwyddyn o oedran rhwng 90 a 100+ oed yn llai dibynadwy nag oedrannau eraill. Roedd y broses amcangyfrif ac asesu ar yr oedrannau hyn yn seiliedig ar yr ystod oedran 90+ yn hytrach na bandiau oedran o bum mlynedd.",
             'uk_armed_forces': "Bydd llawer o'r rhai sydd wedi gwasanaethu yn Lluoedd Arfog y Deyrnas Unedig yn y gorffennol yn ddynion hŷn oherwydd Gwasanaeth Cenedlaethol. Gwnaethom roi proses sicrhau ansawdd ychwanegol ar waith i gywiro rhai atebion gan bersonél sy'n gwasanaethu ar hyn o bryd.",
             'hh_veterans': "Bydd llawer o'r rhai sydd wedi gwasanaethu yn Lluoedd Arfog y Deyrnas Unedig yn y gorffennol yn ddynion hŷn oherwydd Gwasanaeth Cenedlaethol. Gwnaethom roi proses sicrhau ansawdd ychwanegol ar waith i gywiro rhai atebion gan bersonél sy'n gwasanaethu ar hyn o bryd.",
-            'hh_hrp_veteran': "Bydd llawer o'r rhai sydd wedi gwasanaethu yn Lluoedd Arfog y Deyrnas Unedig yn y gorffennol yn ddynion hŷn oherwydd Gwasanaeth Cenedlaethol. Gwnaethom roi proses sicrhau ansawdd ychwanegol ar waith i gywiro rhai atebion gan bersonél sy'n gwasanaethu ar hyn o bryd."
+            'hh_hrp_veteran': "Bydd llawer o'r rhai sydd wedi gwasanaethu yn Lluoedd Arfog y Deyrnas Unedig yn y gorffennol yn ddynion hŷn oherwydd Gwasanaeth Cenedlaethol. Gwnaethom roi proses sicrhau ansawdd ychwanegol ar waith i gywiro rhai atebion gan bersonél sy'n gwasanaethu ar hyn o bryd.",
+            'national_identity_all': """Mae’n bosibl bod y cynnydd ers Cyfrifiad 2011 yn nifer y bobl sy’n nodi eu bod nhw’n “Brydeiniwr/Brydeinwraig” a’r gostyngiad yn nifer y bobl sy’n nodi eu bod nhw’n “Sais/Saesnes” yn adlewyrchu’n rhannol y gwir newidiadau mewn hunanganfyddiad. Mae hefyd yn debygol o adlewyrchu bod “Prydeiniwr/Prydeinwraig” wedi cymryd lle “Sais/Saesnes” fel yr opsiwn ymateb cyntaf yn y rhestr ar yr holiadur yn Lloegr.""",
+            'national_identity_detailed': """Mae’n bosibl bod y cynnydd ers Cyfrifiad 2011 yn nifer y bobl sy’n nodi eu bod nhw’n “Brydeiniwr/Brydeinwraig” a’r gostyngiad yn nifer y bobl sy’n nodi eu bod nhw’n “Sais/Saesnes” yn adlewyrchu’n rhannol y gwir newidiadau mewn hunanganfyddiad. Mae hefyd yn debygol o adlewyrchu bod “Prydeiniwr/Prydeinwraig” wedi cymryd lle “Sais/Saesnes” fel yr opsiwn ymateb cyntaf yn y rhestr ar yr holiadur yn Lloegr."""
                     }
     return welsh_version_dict.get(mnemonic, '')
 
@@ -174,7 +178,53 @@ def classification_to_use(mnemonic):
             "year_arrival_uk": "year_arrival_uk",
             "uk_armed_forces": "uk_armed_forces",
             "hh_veterans": "hh_veterans_5a",
-            "hh_hrp_veteran": "hh_hrp_veteran"
+            "hh_hrp_veteran": "hh_hrp_veteran",
+            "english_proficiency": "english_proficiency",
+            "ethnic_group": "ethnic_group_288a",
+            "ethnic_group_tb": "ethnic_group_tb_20b",
+            "hh_language": "hh_language",
+            "hh_multi_ethnic_group": "hh_multi_ethnic_group",
+            "hh_multi_language": "hh_multi_language",
+            "hh_multi_religion": "hh_multi_religion_7a",
+            "main_language_detailed": "main_language_detailed",
+            "national_identity_all": "national_identity_all",
+            "national_identity_detailed": "national_identity_detailed",
+            "religion": "religion_58a",
+            "religion_tb": "religion_tb",
+            "welsh_skills_all": "welsh_skills_all",
+            "welsh_skills_read": "welsh_skills_read",
+            "welsh_skills_speak": "welsh_skills_speak",
+            "welsh_skills_understand": "welsh_skills_understand",
+            "welsh_skills_write": "welsh_skills_write",
+            "economic_activity": "economic_activity",
+            "has_ever_worked": "has_ever_worked",
+            "hours_per_week_worked": "hours_per_week_worked",
+            "industry_current": "industry_current_88a",
+            "ns_sec": "ns_sec_10a",
+            "occupation_current": "occupation_current_105a",
+            "accom_by_dwelling_type": "accom_by_dwelling_type",
+            "accommodation_type": "accommodation_type",
+            "alternative_address_indicator": "alternative_address_indicator",
+            "ce_management_type": "ce_management_type_26a",
+            "ce_position_sex_age": "ce_position_sex_age_19a",
+            "heating_type": "heating_type",
+            "hh_tenure": "hh_tenure_9a",
+            "number_bedrooms": "number_bedrooms_5a",
+            "number_of_cars": "number_of_cars_5a",
+            "occupancy_rating_bedrooms": "occupancy_rating_bedrooms_6a",
+            "occupancy_rating_rooms": "occupancy_rating_rooms_6a",
+            "second_address_type_priority": "second_address_type_priority",
+            "voa_number_of_rooms": "voa_number_of_rooms_9a",
+            "disability": "disability",
+            "health_in_general": "health_in_general",
+            "hh_disabled": "hh_disabled_4a",
+            "is_carer": "is_carer",
+            "gender_identity": "gender_identity_8a",
+            "sexual_orientation": "sexual_orientation_9a",
+            "highest_qualification": "highest_qualification",
+            "in_full_time_education": "in_full_time_education",
+            "transport_to_workplace": "transport_to_workplace_12a",
+            "workplace_travel": "workplace_travel"
             }
     
     if mnemonic not in lookup.keys():
@@ -193,8 +243,202 @@ def get_variable_title(variable, language):
     return title
 
 
+def multi_classifications(mnemonic):
+    # some variables will use more than one classification
+    lookup = {
+            'accommodation_type': ['accommodation_type', 'accommodation_type_5a', 'accommodation_type_3a'],
+            'country_of_birth': ['country_of_birth_60a', 'country_of_birth_25a', 'country_of_birth_12a', 'country_of_birth_8a', 'country_of_birth_3a'],
+            'disability': ['disability', 'disability_3a'],
+            'economic_activity': ['economic_activity', 'economic_activity_status_10a', 'economic_activity_status_7a', 'economic_activity_status_4a', 'economic_activity_status_3a'],
+            'english_proficiency': ['english_proficiency', 'english_proficiency_4a'],
+            'ethnic_group_tb': ['ethnic_group_tb_20b', 'ethnic_group_tb_6a'],
+            'gender_identity': ['gender_identity_8a', 'gender_identity_7a', 'gender_identity_4a'],
+            'health_in_general': ['health_in_general', 'health_in_general_4a', 'health_in_general_3a'],
+            'heating_type': ['heating_type', 'heating_type_3a'],
+            'hh_family_composition': ['hh_family_composition_15a', 'hh_family_composition_8a', 'hh_family_composition_4a'],
+            'hh_multi_language': ['hh_multi_language', 'hh_multi_language_3a'],
+            'hh_size': ['hh_size_9a', 'hh_size_7a', 'hh_size_5a'],
+            'hh_tenure': ['hh_tenure_9a', 'hh_tenure_7b', 'hh_tenure_5a'],
+            'highest_qualification': ['highest_qualification', 'highest_qualification_6a'],
+            'hours_per_week_worked': ['hours_per_week_worked', 'hours_per_week_worked_3a'],
+            'industry_current': ['industry_current_88a', 'industry_current_22a', 'industry_current_9a'],
+            'is_carer': ['is_carer', 'is_carer_5a'],
+            'legal_partnership_status': ['legal_partnership_status', 'legal_partnership_status_6a', 'legal_partnership_status_3a'],
+            'main_language_detailed': ['main_language_detailed', 'main_language_detailed_23a'],
+            'national_identity_all': ['national_identity_all', 'national_identity_all_9a', 'national_identity_all_4a'],
+            'number_of_cars': ['number_of_cars_5a', 'number_of_cars_3a'],
+            'occupation_current': ['occupation_current_105a', 'occupation_current_10a'],
+            'passports_all': ['passports_all_52a', 'passports_all_27a', 'passports_all_18a', 'passports_all_13a', 'passports_all_4a'],
+            'resident_age': ['resident_age_101a', 'resident_age_91a', 'resident_age_86a', 'resident_age_11a', 'resident_age_8c', 'resident_age_3a'],
+            'sexual_orientation': ['sexual_orientation_9a', 'sexual_orientation_6a', 'sexual_orientation_4a'],
+            'welsh_skills_all': ['welsh_skills_all', 'welsh_skills_all_6a', 'welsh_skills_all_4b'],
+            'workplace_travel': ['workplace_travel', 'workplace_travel_5a', 'workplace_travel_4a'],
+            'year_arrival_uk': ['year_arrival_uk', 'year_arrival_uk_6a']
+            }
+    
+    return lookup.get(mnemonic, '')
+
+def has_multi_classifications(value):
+    # returns true or false
+    if type(value) == list:
+        return True
+    else:
+        return False
+
+def has_quality_information(value):
+    # returns true or false
+    if pd.isnull(value):
+        return False
+    elif value == "":
+        return False
+    else:
+        return True
 
 if __name__ == '__main__':
     variable_details = run()
 
 
+
+
+
+
+
+
+
+
+"""
+####################################################################################
+# reading in from cantabular
+import requests
+
+url = "http://localhost:8492/graphql"
+url = 'http://localhost:8492/graphql?query={service{tables{name}}}'
+
+query = '{service(lang: "en"){tables{label name description datasetName vars}}}'
+query_url = f"{url}?query={query}"
+
+r = requests.get(query_url)
+metadata = r.json()
+dataset_list = []
+for dataset in metadata['data']['service']['tables']:
+    dataset_list.append(dataset['datasetName'])
+    
+    
+    
+{
+  service(lang: "en") {
+    meta {
+      description
+    }
+    tables {
+      name
+      label
+      meta {
+        Dataset_Mnemonic_2011
+        Last_Updated
+      }
+    }
+  }
+}
+
+
+{
+  service {
+    tables(names: ["AP001", "AP002"]) {
+      datasetName
+      description
+      label
+      name
+      vars
+    }
+  }
+}
+    
+{
+  datasets {
+    name
+    label
+		variables(names:["Age"]) {
+		  edges {
+		    node {
+		      description
+		      filterOnly
+		      label
+		      name
+          categories {
+            edges {
+              node {
+                code
+                label
+              }
+            }
+          }
+		    }
+		  }
+		}
+  }
+}
+              
+              
+query = '''{
+  datasets(lang: "en") {
+    variables(base: true, rule: false) {
+      edges {
+        node {
+          name
+          label
+          description
+          isSourceOf {
+            edges {
+              node {
+                categories {
+                  edges {
+                    node {
+                      code
+                      label
+                    }
+                  }
+                }
+                name
+                label
+              }
+            }
+          }
+          meta {
+            ONS_Variable {
+              Comparability_Comments
+              Uk_Comparison_Comments
+              Statistical_Unit {
+                Statistical_Unit
+                Statistical_Unit_Description
+              }
+              Topic {
+                Topic_Title
+                Topic_Mnemonic
+                Topic_Description
+              }
+              Variable_Mnemonic
+              Variable_Mnemonic_2011
+              Variable_Type {
+                Variable_Type_Code
+                Variable_Type_Description
+              }
+              Quality_Statement_Text
+              Quality_Summary_URL
+              Questions {
+                Question_Code
+                Question_Label
+                Question_First_Asked_In_Year
+                Reason_For_Asking_Question
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+'''
+
+"""  
+    

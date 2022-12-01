@@ -18,28 +18,28 @@ def get_topic_dict(list_of_topics, **kwargs):
     all_topic_dict = {
                 "demography": {
                         "en": {
-                                "title_topic_page": "Demography variables",
-                                "summary_topic_page": "Includes age, sex, household composition and marital and civil partnership status.",
-                                "uri_ending_topic_page": "demographyvariablescensus2021",
-                                "title_for_page": "Demography variables Census 2021",
-                                "summary_for_page": "Lists variables used in Census 2021 data, includes age, sex, household composition and marital and civil partnership status.",
-                                "list_of_variables": {
-                                        "resident_age": get_variable_title("resident_age", 'en'),
-                                        "hh_family_composition": get_variable_title("hh_family_composition", 'en'),
-                                        "hh_deprivation": get_variable_title("hh_deprivation",'en'),
-                                        "hh_size": get_variable_title("hh_size", 'en'),
-                                        "living_arrangements": get_variable_title("living_arrangements", 'en'),
-                                        "legal_partnership_status": get_variable_title("legal_partnership_status", 'en'),
-                                        "residence_type": get_variable_title("residence_type", 'en'),
-                                        "sex": get_variable_title("sex", 'en')
+                            "title_topic_page": "Demography variables",
+                            "summary_topic_page": "Includes age, sex, household composition and legal partnership status.",
+                            "uri_ending_topic_page": "demographyvariablescensus2021",
+                            "title_for_page": "Demography variables Census 2021",
+                            "summary_for_page": "Variables used in Census 2021 data, includes age, sex, household composition and legal partnership status.",
+                            "list_of_variables": {
+                                    "resident_age": get_variable_title("resident_age", 'en'),
+                                    "hh_family_composition": get_variable_title("hh_family_composition", 'en'),
+                                    "hh_deprivation": get_variable_title("hh_deprivation",'en'),
+                                    "hh_size": get_variable_title("hh_size", 'en'),
+                                    "living_arrangements": get_variable_title("living_arrangements", 'en'),
+                                    "legal_partnership_status": get_variable_title("legal_partnership_status", 'en'),
+                                    "residence_type": get_variable_title("residence_type", 'en'),
+                                    "sex": get_variable_title("sex", 'en')
                                     }
                                 },
                         "cy": {
                             "title_topic_page": "Newidynnau demograffeg",
-                            "summary_topic_page": "Yn cynnwys oedran, rhyw, cyfansoddiad y cartref a statws priodasol a phartneriaeth sifil.",
+                            "summary_topic_page": "Yn cynnwys oedran, rhyw, cyfansoddiad y cartref a statws partneriaeth sifil.",
                             "uri_ending_topic_page": "",
                             "title_for_page": "Newidynnau demograffeg Cyfrifiad 2021",
-                            "summary_for_page": "Rhestr o newidynnau a ddefnyddir yn nata Cyfrifiad 2021 sy'n cynnwys oedran, rhyw, cyfansoddiad y cartref a statws priodasol a phartneriaeth sifil.",
+                            "summary_for_page": "Newidynnau a ddefnyddir yn nata Cyfrifiad 2021, sy'n cynnwys oedran, rhyw, cyfansoddiad y cartref a statws partneriaeth sifil.",
                             "list_of_variables": {
                                     "resident_age": get_variable_title("resident_age", 'cy'),
                                     "hh_family_composition": get_variable_title("hh_family_composition", 'cy'),
@@ -54,48 +54,48 @@ def get_topic_dict(list_of_topics, **kwargs):
                 },
                 "international migration": {
                         "en": {
-                                "title_topic_page": "International migration variables",
-                                "summary_topic_page": "Includes country of birth, year and age of arrival in the UK, length of residence in the UK and migrant indicator.",
-                                "uri_ending_topic_page": "internationalmigrationvariablescensus2021", 
-                                "title_for_page": "International migration variables Census 2021",
-                                "summary_for_page": "Lists variables used in Census 2021 data, includes country of birth, year and age of arrivals in the UK, length of residence in the UK and migrant indicator.",
-                                "list_of_variables": {
-                                        "age_arrival_uk": get_variable_title("age_arrival_uk", 'en'),
-                                        "country_of_birth": get_variable_title("country_of_birth", 'en'),
-                                        "residence_length": get_variable_title("residence_length", 'en'),
-                                        "migrant_ind": get_variable_title("migrant_ind", 'en'),
-                                        "passports_all": get_variable_title("passports_all", 'en'),
-                                        "year_arrival_uk": get_variable_title("year_arrival_uk", 'en')
+                            "title_topic_page": "International migration variables",
+                            "summary_topic_page": "Includes the year that people arrived in the UK and their age, country of birth, length of residence, and migrant indicator.",
+                            "uri_ending_topic_page": "internationalmigrationvariablescensus2021", 
+                            "title_for_page": "International migration variables Census 2021",
+                            "summary_for_page": "Variables used in Census 2021 data, includes the year that people arrived in the UK and their age, country of birth, length of residence, and migrant indicator.",
+                            "list_of_variables": {
+                                    "age_arrival_uk": get_variable_title("age_arrival_uk", 'en'),
+                                    "country_of_birth": get_variable_title("country_of_birth", 'en'),
+                                    "residence_length": get_variable_title("residence_length", 'en'),
+                                    "migrant_ind": get_variable_title("migrant_ind", 'en'),
+                                    "passports_all": get_variable_title("passports_all", 'en'),
+                                    "year_arrival_uk": get_variable_title("year_arrival_uk", 'en')
                                     }
                                 },
                         "cy": {
-                                "title_topic_page": "Newidynnau mudo rhyngwladol",
-                                "summary_topic_page": "Yn cynnwys gwlad enedigol, blwyddyn ac oedran cyrraedd y Deyrnas Unedig, cyfnod preswylio yn y Deyrnas Unedig a dangosydd mudwyr.",
-                                "uri_ending_topic_page": "",
-                                "title_for_page": "Newidynnau mudo rhyngwladol Cyfrifiad 2021",
-                                "summary_for_page": "Rhestr o newidynnau a ddefnyddir yn nata Cyfrifiad 2021, sy'n cynnwys gwlad enedigol, blwyddyn ac oedran cyrraedd y Deyrnas Unedig, cyfnod preswylio yn y Deyrnas Unedig a dangosydd mudwyr.",
-                                "list_of_variables": {
-                                        "age_arrival_uk": get_variable_title("age_arrival_uk", 'cy'),
-                                        "country_of_birth": get_variable_title("country_of_birth", 'cy'),
-                                        "residence_length": get_variable_title("residence_length", 'cy'),
-                                        "migrant_ind": get_variable_title("migrant_ind", 'cy'),
-                                        "passports_all": get_variable_title("passports_all", 'cy'),
-                                        "year_arrival_uk": get_variable_title("year_arrival_uk", 'cy')
+                            "title_topic_page": "Newidynnau mudo rhyngwladol",
+                            "summary_topic_page": "Yn cynnwys y flwyddyn y cyrhaeddodd pobl y Deyrnas Unedig a'u hoedran, eu gwlad enedigol, cyfnod preswylio, a dangosydd mudwyr.",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "Newidynnau mudo rhyngwladol Cyfrifiad 2021",
+                            "summary_for_page": "Newidynnau a ddefnyddir yn nata Cyfrifiad 2021, sy'n cynnwys y flwyddyn y cyrhaeddodd pobl y Deyrnas Unedig a'u hoedran, eu gwlad enedigol, cyfnod preswylio, a dangosydd mudwyr.",
+                            "list_of_variables": {
+                                    "age_arrival_uk": get_variable_title("age_arrival_uk", 'cy'),
+                                    "country_of_birth": get_variable_title("country_of_birth", 'cy'),
+                                    "residence_length": get_variable_title("residence_length", 'cy'),
+                                    "migrant_ind": get_variable_title("migrant_ind", 'cy'),
+                                    "passports_all": get_variable_title("passports_all", 'cy'),
+                                    "year_arrival_uk": get_variable_title("year_arrival_uk", 'cy')
                                     }
                             }
                 },
                 "UK armed forces veterans": {
                         "en": {
-                                "title_topic_page": "UK armed forces veterans variables",
-                                "summary_topic_page": "Includes number of people in household who previously served in the UK armed forces and UK armed forces veteran indicator.",
-                                "uri_ending_topic_page": "ukarmedforcesveteransvariablescensus2021",
-                                "title_for_page": "UK armed forces veterans variables Census 2021",
-                                "summary_for_page": "Lists variables used in Census 2021 data, includes people in a household who previously served in the UK armed forces and UK armed forces veteran indicator.",
-                                "list_of_variables": {
-                                        "hh_hrp_veteran": get_variable_title("hh_hrp_veteran", 'en'),
-                                        "hh_veterans": get_variable_title("hh_veterans", 'en'),
-                                        "residence_type": get_variable_title("residence_type", 'en'),
-                                        "uk_armed_forces": get_variable_title("uk_armed_forces", 'en')
+                            "title_topic_page": "UK armed forces veterans variables",
+                            "summary_topic_page": "Includes number of people in household who previously served in the UK armed forces and UK armed forces veteran indicator.",
+                            "uri_ending_topic_page": "ukarmedforcesveteransvariablescensus2021",
+                            "title_for_page": "UK armed forces veterans variables Census 2021",
+                            "summary_for_page": "Variables used in Census 2021 data, includes people in a household who previously served in the UK armed forces and UK armed forces veteran indicator.",
+                            "list_of_variables": {
+                                    "hh_hrp_veteran": get_variable_title("hh_hrp_veteran", 'en'),
+                                    "hh_veterans": get_variable_title("hh_veterans", 'en'),
+                                    "residence_type": get_variable_title("residence_type", 'en'),
+                                    "uk_armed_forces": get_variable_title("uk_armed_forces", 'en')
                                     }
                                 },
                         "cy": {
@@ -103,12 +103,246 @@ def get_topic_dict(list_of_topics, **kwargs):
                             "summary_topic_page": "Yn cynnwys pobl mewn cartref sydd wedi gwasanaethu yn lluoedd arfog y Deyrnas Unedig yn y gorffennol a dangosydd cyn-filwr yn lluoedd arfog y Deyrnas Unedig.",
                             "uri_ending_topic_page": "",
                             "title_for_page": "Newidynnau cyn-filwyr lluoedd arfog y Deyrnas Unedig Cyfrifiad 2021",
-                            "summary_for_page": "Rhestr o newidynnau a ddefnyddir yn nata Cyfrifiad 2021, sy'n cynnwys pobl mewn cartref sydd wedi gwasanaethu yn lluoedd arfog y Deyrnas Unedig yn y gorffennol a dangosydd cyn-filwr yn lluoedd arfog y Deyrnas Unedig.",
+                            "summary_for_page": "Newidynnau a ddefnyddir yn nata Cyfrifiad 2021, sy'n cynnwys pobl mewn cartref sydd wedi gwasanaethu yn lluoedd arfog y Deyrnas Unedig yn y gorffennol a dangosydd cyn-filwr yn lluoedd arfog y Deyrnas Unedig.",
                             "list_of_variables": {
                                     "hh_hrp_veteran":get_variable_title("hh_hrp_veteran", 'cy'),
                                     "hh_veterans": get_variable_title("hh_veterans", 'cy'),
                                     "residence_type": get_variable_title("residence_type", 'cy'),
                                     "uk_armed_forces": get_variable_title("uk_armed_forces", 'cy')
+                                    }
+                            }
+                },
+                "eilr": {
+                        "en": {
+                            "title_topic_page": "Ethnic group, national identity, language and religion variables",
+                            "summary_topic_page": "Includes languages, national identity, ethnic group, multiple religions in household and main language.",
+                            "uri_ending_topic_page": "ethnicgroupnationalidentitylanguageandreligionvariablescensus2021", 
+                            "title_for_page": "Ethnic group, national identity, language and religion variables Census 2021",
+                            "summary_for_page": "Variables used in Census 2021 data, includes languages, national identity, ethnic group, multiple religions in household and main language.",
+                            "list_of_variables": {
+                                    "resident_age": get_variable_title("resident_age", 'en'),
+                                    "ethnic_group_tb": get_variable_title("ethnic_group_tb", 'en'),
+                                    "ethnic_group": get_variable_title("ethnic_group", 'en'),
+                                    "hh_language": get_variable_title("hh_language", 'en'),
+                                    "main_language_detailed": get_variable_title("main_language_detailed", 'en'),
+                                    "hh_multi_ethnic_group": get_variable_title("hh_multi_ethnic_group", 'en'),
+                                    "hh_multi_language": get_variable_title("hh_multi_language", 'en'),
+                                    "hh_multi_religion": get_variable_title("hh_multi_religion", 'en'),
+                                    "national_identity_all": get_variable_title("national_identity_all", 'en'),
+                                    "national_identity_detailed": get_variable_title("national_identity_detailed", 'en'),
+                                    "english_proficiency": get_variable_title("english_proficiency", 'en'),
+                                    "religion_tb": get_variable_title("religion_tb", 'en'),
+                                    "religion": get_variable_title("religion", 'en'),
+                                    "welsh_skills_all": get_variable_title("welsh_skills_all", 'en'),
+                                    "welsh_skills_read": get_variable_title("welsh_skills_read", 'en'),
+                                    "welsh_skills_speak": get_variable_title("welsh_skills_speak", 'en'),
+                                    "welsh_skills_understand": get_variable_title("welsh_skills_understand", 'en'),
+                                    "welsh_skills_write": get_variable_title("welsh_skills_write", 'en')
+                                    }
+                                },
+                        "cy": {
+                            "title_topic_page": "Newidynnau grŵp ethnig, hunaniaeth genedlaethol, iaith a chrefydd",
+                            "summary_topic_page": "Yn cynnwys ieithoedd, hunaniaeth genedlaethol, grŵp ethnig, sawl crefydd mewn cartref a phrif iaith.",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "Newidynnau grŵp ethnig, hunaniaeth genedlaethol, iaith a chrefydd Cyfrifiad 2021",
+                            "summary_for_page": "Newidynnau a ddefnyddir yn nata Cyfrifiad 2021, sy'n cynnwys ieithoedd, hunaniaeth genedlaethol, grŵp ethnig, sawl crefydd mewn cartref a phrif iaith.",
+                            "list_of_variables": {
+                                    "resident_age": get_variable_title("resident_age", 'cy'),
+                                    "ethnic_group_tb": get_variable_title("ethnic_group_tb", 'cy'),
+                                    "ethnic_group": get_variable_title("ethnic_group", 'cy'),
+                                    "hh_language": get_variable_title("hh_language", 'cy'),
+                                    "main_language_detailed": get_variable_title("main_language_detailed", 'cy'),
+                                    "hh_multi_ethnic_group": get_variable_title("hh_multi_ethnic_group", 'cy'),
+                                    "hh_multi_language": get_variable_title("hh_multi_language", 'cy'),
+                                    "hh_multi_religion": get_variable_title("hh_multi_religion", 'cy'),
+                                    "national_identity_all": get_variable_title("national_identity_all", 'cy'),
+                                    "national_identity_detailed": get_variable_title("national_identity_detailed", 'cy'),
+                                    "english_proficiency": get_variable_title("english_proficiency", 'cy'),
+                                    "religion_tb": get_variable_title("religion_tb", 'cy'),
+                                    "religion": get_variable_title("religion", 'cy'),
+                                    "welsh_skills_all": get_variable_title("welsh_skills_all", 'cy'),
+                                    "welsh_skills_read": get_variable_title("welsh_skills_read", 'cy'),
+                                    "welsh_skills_speak": get_variable_title("welsh_skills_speak", 'cy'),
+                                    "welsh_skills_understand": get_variable_title("welsh_skills_understand", 'cy'),
+                                    "welsh_skills_write": get_variable_title("welsh_skills_write", 'cy')
+                                    }
+                            }
+                },
+                "labour market": {
+                        "en": {
+                            "title_topic_page": "Labour market variables",
+                            "summary_topic_page": "Includes, economic activity status, current occupation, current industry, hours worked and unemployment history.",
+                            "uri_ending_topic_page": "labourmarketvariablescensus2021",
+                            "title_for_page": "Labour market variables Census 2021",
+                            "summary_for_page": "Variables used in Census 2021 data includes, economic activity status, current occupation, current industry, hours worked and unemployment history.",
+                            "list_of_variables": {
+                                    "economic_activity": get_variable_title("economic_activity", 'en'),
+                                    "hours_per_week_worked": get_variable_title("hours_per_week_worked", 'en'),
+                                    "industry_current": get_variable_title("industry_current", 'en'),
+                                    "ns_sec": get_variable_title("ns_sec", 'en'),
+                                    "occupation_current": get_variable_title("occupation_current", 'en'),
+                                    "has_ever_worked": get_variable_title("has_ever_worked", 'en'),
+                                    }
+                                },
+                        "cy": {
+                            "title_topic_page": "Newidynnau'r farchnad lafur",
+                            "summary_topic_page": "Yn cynnwys statws gweithgarwch economaidd, galwedigaeth gyfredol, diwydiant cyfredol, oriau gwaith a hanes diweithdra.",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "Newidynnau'r farchnad lafur Cyfrifiad 2021",
+                            "summary_for_page": "Newidynnau a ddefnyddir yn nata Cyfrifiad 2021 sy'n cynnwys statws gweithgarwch economaidd, galwedigaeth gyfredol, diwydiant cyfredol, oriau gwaith a hanes diweithdra.",
+                            "list_of_variables": {
+                                    "economic_activity": get_variable_title("economic_activity", 'cy'),
+                                    "hours_per_week_worked": get_variable_title("hours_per_week_worked", 'cy'),
+                                    "industry_current": get_variable_title("industry_current", 'cy'),
+                                    "ns_sec": get_variable_title("ns_sec", 'cy'),
+                                    "occupation_current": get_variable_title("occupation_current", 'cy'),
+                                    "has_ever_worked": get_variable_title("has_ever_worked", 'cy')
+                                    }
+                            }
+                },
+                "housing": {
+                        "en": {
+                            "title_topic_page": "",
+                            "summary_topic_page": "",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "",
+                            "summary_for_page": "",
+                            "list_of_variables": {
+                                    "accom_by_dwelling_type": get_variable_title("accom_by_dwelling_type", 'en'),
+                                    "accommodation_type": get_variable_title("accommodation_type", 'en'),
+                                    "alternative_address_indicator": get_variable_title("alternative_address_indicator", 'en'),
+                                    "ce_management_type": get_variable_title("ce_management_type", 'en'),
+                                    "ce_position_sex_age": get_variable_title("ce_position_sex_age", 'en'),
+                                    "heating_type": get_variable_title("heating_type", 'en'),
+                                    "hh_tenure": get_variable_title("hh_tenure", 'en'),
+                                    "number_bedrooms": get_variable_title("number_bedrooms", 'en'),
+                                    "number_of_cars": get_variable_title("number_of_cars", 'en'),
+                                    "occupancy_rating_bedrooms": get_variable_title("occupancy_rating_bedrooms", 'en'),
+                                    "occupancy_rating_rooms": get_variable_title("occupancy_rating_rooms", 'en'),
+                                    "second_address_type_priority": get_variable_title("second_address_type_priority", 'en'),
+                                    "voa_number_of_rooms": get_variable_title("voa_number_of_rooms", 'en')
+                                    }
+                                },
+                        "cy": {
+                            "title_topic_page": "",
+                            "summary_topic_page": "",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "",
+                            "summary_for_page": "",
+                            "list_of_variables": {
+                                    "accom_by_dwelling_type": get_variable_title("accom_by_dwelling_type", 'cy'),
+                                    "accommodation_type": get_variable_title("accommodation_type", 'cy'),
+                                    "alternative_address_indicator": get_variable_title("alternative_address_indicator", 'cy'),
+                                    "ce_management_type": get_variable_title("ce_management_type", 'cy'),
+                                    "ce_position_sex_age": get_variable_title("ce_position_sex_age", 'cy'),
+                                    "heating_type": get_variable_title("heating_type", 'cy'),
+                                    "hh_tenure": get_variable_title("hh_tenure", 'cy'),
+                                    "number_bedrooms": get_variable_title("number_bedrooms", 'cy'),
+                                    "number_of_cars": get_variable_title("number_of_cars", 'cy'),
+                                    "occupancy_rating_bedrooms": get_variable_title("occupancy_rating_bedrooms", 'cy'),
+                                    "occupancy_rating_rooms": get_variable_title("occupancy_rating_rooms", 'cy'),
+                                    "second_address_type_priority": get_variable_title("second_address_type_priority", 'cy'),
+                                    "voa_number_of_rooms": get_variable_title("voa_number_of_rooms", 'cy')
+                                    }
+                            }
+                },
+                "health, disability and unpaid care": {
+                        "en": {
+                            "title_topic_page": "",
+                            "summary_topic_page": "",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "",
+                            "summary_for_page": "",
+                            "list_of_variables": {
+                                    "disability": get_variable_title("disability", 'en'),
+                                    "health_in_general": get_variable_title("health_in_general", 'en'),
+                                    "hh_disabled": get_variable_title("hh_disabled", 'en'),
+                                    "is_carer": get_variable_title("is_carer", 'en')
+                                    }
+                                },
+                        "cy": {
+                            "title_topic_page": "",
+                            "summary_topic_page": "",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "",
+                            "summary_for_page": "",
+                            "list_of_variables": {
+                                    "disability": get_variable_title("disability", 'cy'),
+                                    "health_in_general": get_variable_title("health_in_general", 'cy'),
+                                    "hh_disabled": get_variable_title("hh_disabled", 'cy'),
+                                    "is_carer": get_variable_title("is_carer", 'cy')
+                                    }
+                            }
+                },
+                "sexual orientation and gender identity": {
+                        "en": {
+                            "title_topic_page": "",
+                            "summary_topic_page": "",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "",
+                            "summary_for_page": "",
+                            "list_of_variables": {
+                                    "gender_identity": get_variable_title("gender_identity", 'en'),
+                                    "sexual_orientation": get_variable_title("sexual_orientation", 'en')
+                                    }
+                                },
+                        "cy": {
+                            "title_topic_page": "",
+                            "summary_topic_page": "",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "",
+                            "summary_for_page": "",
+                            "list_of_variables": {
+                                    "gender_identity": get_variable_title("gender_identity", 'cy'),
+                                    "sexual_orientation": get_variable_title("sexual_orientation", 'cy')
+                                    }
+                            }
+                },
+                "education": {
+                        "en": {
+                            "title_topic_page": "",
+                            "summary_topic_page": "",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "",
+                            "summary_for_page": "",
+                            "list_of_variables": {
+                                    "highest_qualification": get_variable_title("highest_qualification", 'en'),
+                                    "in_full_time_education": get_variable_title("in_full_time_education", 'en')
+                                    }
+                                },
+                        "cy": {
+                            "title_topic_page": "",
+                            "summary_topic_page": "",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "",
+                            "summary_for_page": "",
+                            "list_of_variables": {
+                                    "highest_qualification": get_variable_title("highest_qualification", 'cy'),
+                                    "in_full_time_education": get_variable_title("in_full_time_education", 'cy')
+                                    }
+                            }
+                },
+                "travel to work": {
+                        "en": {
+                            "title_topic_page": "Travel to work variables",
+                            "summary_topic_page": "Includes method used to travel to work and distance travelled to work.",
+                            "uri_ending_topic_page": "traveltoworkvariablescensus2021",
+                            "title_for_page": "Travel to work variables Census 2021",
+                            "summary_for_page": "Variables used in Census 2021 data, includes method used to travel to work and distance travelled to work.",
+                            "list_of_variables": {
+                                    "transport_to_workplace": get_variable_title("transport_to_workplace", 'en'),
+                                    "workplace_travel": get_variable_title("workplace_travel", 'en')
+                                    }
+                                },
+                        "cy": {
+                            "title_topic_page": "Newidynnau teithio i'r gwaith",
+                            "summary_topic_page": "Yn cynnwys dull o deithio i'r gwaith a phellter teithio i'r gwaith.",
+                            "uri_ending_topic_page": "",
+                            "title_for_page": "Newidynnau teithio i'r gwaith Cyfrifiad 2021",
+                            "summary_for_page": "Newidynnau a ddefnyddir yn nata Cyfrifiad 2021, sy'n cynnwys dull o deithio i'r gwaith a phellter teithio i'r gwaith.",
+                            "list_of_variables": {
+                                    "transport_to_workplace": get_variable_title("transport_to_workplace", 'cy'),
+                                    "workplace_travel": get_variable_title("workplace_travel", 'cy')
                                     }
                             }
                 }
