@@ -4,7 +4,7 @@ import pandas as pd
 location = "cantabular/ar2776-c21ew_metadata-v1-3_cantab_20221201-32/"
 
 def run():
-    variable = "transport_to_workplace"
+    variable = "hh_hrp_veteran"
     variable_details = get_variable_details(variable)
     return variable_details
 
@@ -32,6 +32,7 @@ def get_variable_details(variable):
     variable_details['en']['statistical unit'] = df.iloc[0]['Statistical_Unit']
     variable_details['en']['comparability'] = df.iloc[0]['Comparability_Comments']
     variable_details['en']['quality_statement'] = df.iloc[0]['Quality_Statement_Text']
+    variable_details['en']['quality_statement_url'] = quality_statement_url_parser(df.iloc[0]['Quality_Summary_URL'])
     variable_details['en']['preferred_classification'] = classification_to_use(variable_details['en']['mnemonic'])
     variable_details['en']['multi_classifications'] = multi_classifications(variable_details['en']['mnemonic'])
     variable_details['en']['has_multi_classifications'] = has_multi_classifications(variable_details['en']['multi_classifications'])
@@ -106,26 +107,49 @@ def get_variable_details(variable):
     
     question_df = pd.read_csv(f"{location}Question.csv", dtype=str)
     question_mapping_df = pd.read_csv(f"{location}Variable_Source_Question.csv", dtype=str)
-    question_mapping_dict = dict(zip(list(question_mapping_df['Variable_Mnemonic']), list(question_mapping_df['Source_Question_Code'])))
+    
+    question_mapping_dict = {}
+    for i in question_mapping_df.index:
+        variable_code = question_mapping_df.iloc[i]['Variable_Mnemonic']
+        question_code = question_mapping_df.iloc[i]['Source_Question_Code']
+        if variable_code not in question_mapping_dict.keys():
+            question_mapping_dict[variable_code] = [question_code]
+        else:
+            question_mapping_dict[variable_code].append(question_code)
+    
+    #question_mapping_dict = dict(zip(list(question_mapping_df['Variable_Mnemonic']), list(question_mapping_df['Source_Question_Code'])))
     del question_mapping_df
     
     if variable_mnemonic in question_mapping_dict.keys():
-        question_id = question_mapping_dict[variable_mnemonic]
-        question_variable_df = question_df[question_df['Question_Code'] == question_id]
-        assert len(question_variable_df) == 1, f"found more than one line of data for the question_variable_df"
-
-        variable_details['en']['question'] = {}
-        variable_details['en']['question']['question'] = question_variable_df.iloc[0]['Question_Label']
-        variable_details['en']['question']['reason'] = question_variable_df.iloc[0]['Reason_For_Asking_Question']
-        variable_details['en']['question']['first_asked'] = question_variable_df.iloc[0]['Question_First_Asked_In_Year']
+        question_id_list = question_mapping_dict[variable_mnemonic]
+        variable_details['en']['question'] = []
+        variable_details['cy']['question'] = []
         
-        variable_details['cy']['question'] = {}
-        variable_details['cy']['question']['question'] = question_variable_df.iloc[0]['Question_Label_Welsh']
-        variable_details['cy']['question']['reason'] = question_variable_df.iloc[0]['Reason_For_Asking_Question_Welsh']
-        variable_details['cy']['question']['first_asked'] = question_variable_df.iloc[0]['Question_First_Asked_In_Year']
-    
-    # find where question comes from
+        for i, question_id in enumerate(question_id_list):
+            question_variable_df = question_df[question_df['Question_Code'] == question_id]
+            assert len(question_variable_df) == 1, f"found more than one line of data for the question_variable_df"
+            
+            loop_dict_en, loop_dict_cy = {}, {}
+
+            loop_dict_en['question'] = question_variable_df.iloc[0]['Question_Label']
+            loop_dict_en['reason'] = question_variable_df.iloc[0]['Reason_For_Asking_Question']
+            loop_dict_en['first_asked'] = question_variable_df.iloc[0]['Question_First_Asked_In_Year']
+            
+            loop_dict_cy['question'] = question_variable_df.iloc[0]['Question_Label_Welsh']
+            loop_dict_cy['reason'] = question_variable_df.iloc[0]['Reason_For_Asking_Question_Welsh']
+            loop_dict_cy['first_asked'] = question_variable_df.iloc[0]['Question_First_Asked_In_Year']
+            
+            variable_details['en']['question'].append(loop_dict_en)
+            variable_details['cy']['question'].append(loop_dict_cy)
+            
+        if len(variable_details['en']['question']) == 1:
+            variable_details['en']['has_multi_questions'] = False
+        else:
+            variable_details['en']['has_multi_questions'] = True
+            
     del question_df, question_mapping_dict
+    
+    
     
     
     return variable_details
@@ -154,7 +178,20 @@ def quality_information_welsh(mnemonic):
             'hh_veterans': "Bydd llawer o'r rhai sydd wedi gwasanaethu yn Lluoedd Arfog y Deyrnas Unedig yn y gorffennol yn ddynion hŷn oherwydd Gwasanaeth Cenedlaethol. Gwnaethom roi proses sicrhau ansawdd ychwanegol ar waith i gywiro rhai atebion gan bersonél sy'n gwasanaethu ar hyn o bryd.",
             'hh_hrp_veteran': "Bydd llawer o'r rhai sydd wedi gwasanaethu yn Lluoedd Arfog y Deyrnas Unedig yn y gorffennol yn ddynion hŷn oherwydd Gwasanaeth Cenedlaethol. Gwnaethom roi proses sicrhau ansawdd ychwanegol ar waith i gywiro rhai atebion gan bersonél sy'n gwasanaethu ar hyn o bryd.",
             'national_identity_all': """Mae’n bosibl bod y cynnydd ers Cyfrifiad 2011 yn nifer y bobl sy’n nodi eu bod nhw’n “Brydeiniwr/Brydeinwraig” a’r gostyngiad yn nifer y bobl sy’n nodi eu bod nhw’n “Sais/Saesnes” yn adlewyrchu’n rhannol y gwir newidiadau mewn hunanganfyddiad. Mae hefyd yn debygol o adlewyrchu bod “Prydeiniwr/Prydeinwraig” wedi cymryd lle “Sais/Saesnes” fel yr opsiwn ymateb cyntaf yn y rhestr ar yr holiadur yn Lloegr.""",
-            'national_identity_detailed': """Mae’n bosibl bod y cynnydd ers Cyfrifiad 2011 yn nifer y bobl sy’n nodi eu bod nhw’n “Brydeiniwr/Brydeinwraig” a’r gostyngiad yn nifer y bobl sy’n nodi eu bod nhw’n “Sais/Saesnes” yn adlewyrchu’n rhannol y gwir newidiadau mewn hunanganfyddiad. Mae hefyd yn debygol o adlewyrchu bod “Prydeiniwr/Prydeinwraig” wedi cymryd lle “Sais/Saesnes” fel yr opsiwn ymateb cyntaf yn y rhestr ar yr holiadur yn Lloegr."""
+            'national_identity_detailed': """Mae’n bosibl bod y cynnydd ers Cyfrifiad 2011 yn nifer y bobl sy’n nodi eu bod nhw’n “Brydeiniwr/Brydeinwraig” a’r gostyngiad yn nifer y bobl sy’n nodi eu bod nhw’n “Sais/Saesnes” yn adlewyrchu’n rhannol y gwir newidiadau mewn hunanganfyddiad. Mae hefyd yn debygol o adlewyrchu bod “Prydeiniwr/Prydeinwraig” wedi cymryd lle “Sais/Saesnes” fel yr opsiwn ymateb cyntaf yn y rhestr ar yr holiadur yn Lloegr.""",
+            'economic_activity': "Gan fod Cyfrifiad 2021 yn ystod cyfnod unigryw o newid cyflym, cymerwch ofal wrth ddefnyddio’r data hwn at ddibenion cynllunio.",
+            'has_ever_worked': "Gan fod Cyfrifiad 2021 yn ystod cyfnod unigryw o newid cyflym, cymerwch ofal wrth ddefnyddio’r data hwn at ddibenion cynllunio.",
+            'occupation_current': "Gan fod Cyfrifiad 2021 yn ystod cyfnod unigryw o newid cyflym, cymerwch ofal wrth ddefnyddio’r data hwn at ddibenion cynllunio.",
+            'ns_sec': "Gan fod Cyfrifiad 2021 yn ystod cyfnod unigryw o newid cyflym, cymerwch ofal wrth ddefnyddio’r data hwn at ddibenion cynllunio.",
+            'hours_per_week_worked': "Gan fod Cyfrifiad 2021 yn ystod cyfnod unigryw o newid cyflym, cymerwch ofal wrth ddefnyddio’r data hwn at ddibenion cynllunio.",
+            'workplace_travel': "Gan fod Cyfrifiad 2021 yn ystod cyfnod unigryw o newid cyflym, cymerwch ofal wrth ddefnyddio’r data hwn at ddibenion cynllunio.",
+            'transport_to_workplace': "Gan fod Cyfrifiad 2021 yn ystod cyfnod unigryw o newid cyflym, cymerwch ofal wrth ddefnyddio’r data hwn at ddibenion cynllunio.",
+            'voa_number_of_rooms': "Mae'n amhriodol mesur newid yn nifer yr ystafelloedd rhwng 2011 a 2021, gan fod Cyfrifiad 2021 wedi defnyddio data Asiantaeth y Swyddfa Brisio ar gyfer y newidyn hwn. Yn hytrach, defnyddiwch amcangyfrifon Cyfrifiad 2021 ar gyfer nifer yr ystafelloedd gwely at ddibenion cymharu dros amser.",
+            'occupancy_rating_rooms': "Mae'n amhriodol mesur newid yn nifer yr ystafelloedd rhwng 2011 a 2021, gan fod Cyfrifiad 2021 wedi defnyddio data Asiantaeth y Swyddfa Brisio ar gyfer y newidyn hwn. Yn hytrach, defnyddiwch amcangyfrifon Cyfrifiad 2021 ar gyfer nifer yr ystafelloedd gwely at ddibenion cymharu dros amser.",
+            'hh_tenure': "Mae tystiolaeth bod pobl wedi nodi eu math o landlord fel ”Y cyngor neu'r awdurdod lleol” neu “Gymdeithas dai” yn anghywir. Dylech adio'r ddau gategori hyn gyda'i gilydd wrth ddadansoddi data sy'n defnyddio'r newidyn hwn.",
+            'accommodation_type': "Rydym wedi gwneud newidiadau i ddiffiniadau tai ers Cyfrifiad 2021. Cymerwch ofal os byddwch yn cymharu canlyniadau Cyfrifiad 2021 â chanlyniadau Cyfrifiad 2011 ar gyfer y pwnc hwn.",
+            'ce_management_type': "Rydym wedi gwneud newidiadau i ddiffiniadau tai ers Cyfrifiad 2021. Cymerwch ofal os byddwch yn cymharu canlyniadau Cyfrifiad 2021 â chanlyniadau Cyfrifiad 2011 ar gyfer y pwnc hwn.",
+            'highest_qualification': "Mae ystyriaethau ansawdd ynghylch cymwysterau addysg uwch, gan gynnwys y rheini ar lefel 4+, ymatebion gan bobl hŷn a mudwyr rhyngwladol a chymaroldeb â data Cyfrifiad 2011."
                     }
     return welsh_version_dict.get(mnemonic, '')
 
@@ -293,152 +330,13 @@ def has_quality_information(value):
         return False
     else:
         return True
+    
+def quality_statement_url_parser(url):
+    if pd.isnull(url):
+        return
+    assert url.startswith("https://"), f"{url} does not follow normal format"
+    new_url = url.split('https://www.ons.gov.uk')[1]
+    return new_url
 
 if __name__ == '__main__':
     variable_details = run()
-
-
-
-
-
-
-
-
-
-
-"""
-####################################################################################
-# reading in from cantabular
-import requests
-
-url = "http://localhost:8492/graphql"
-url = 'http://localhost:8492/graphql?query={service{tables{name}}}'
-
-query = '{service(lang: "en"){tables{label name description datasetName vars}}}'
-query_url = f"{url}?query={query}"
-
-r = requests.get(query_url)
-metadata = r.json()
-dataset_list = []
-for dataset in metadata['data']['service']['tables']:
-    dataset_list.append(dataset['datasetName'])
-    
-    
-    
-{
-  service(lang: "en") {
-    meta {
-      description
-    }
-    tables {
-      name
-      label
-      meta {
-        Dataset_Mnemonic_2011
-        Last_Updated
-      }
-    }
-  }
-}
-
-
-{
-  service {
-    tables(names: ["AP001", "AP002"]) {
-      datasetName
-      description
-      label
-      name
-      vars
-    }
-  }
-}
-    
-{
-  datasets {
-    name
-    label
-		variables(names:["Age"]) {
-		  edges {
-		    node {
-		      description
-		      filterOnly
-		      label
-		      name
-          categories {
-            edges {
-              node {
-                code
-                label
-              }
-            }
-          }
-		    }
-		  }
-		}
-  }
-}
-              
-              
-query = '''{
-  datasets(lang: "en") {
-    variables(base: true, rule: false) {
-      edges {
-        node {
-          name
-          label
-          description
-          isSourceOf {
-            edges {
-              node {
-                categories {
-                  edges {
-                    node {
-                      code
-                      label
-                    }
-                  }
-                }
-                name
-                label
-              }
-            }
-          }
-          meta {
-            ONS_Variable {
-              Comparability_Comments
-              Uk_Comparison_Comments
-              Statistical_Unit {
-                Statistical_Unit
-                Statistical_Unit_Description
-              }
-              Topic {
-                Topic_Title
-                Topic_Mnemonic
-                Topic_Description
-              }
-              Variable_Mnemonic
-              Variable_Mnemonic_2011
-              Variable_Type {
-                Variable_Type_Code
-                Variable_Type_Description
-              }
-              Quality_Statement_Text
-              Quality_Summary_URL
-              Questions {
-                Question_Code
-                Question_Label
-                Question_First_Asked_In_Year
-                Reason_For_Asking_Question
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-'''
-
-"""  
-    

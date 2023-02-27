@@ -2,21 +2,26 @@ import datetime, os, time, requests
 from cantabular_request import get_variable_details
 from data_dict_dicts import get_topic_dict
 
-environment = "sandbox"
+environment = "test"
+collection_name = "Data dict SEO update"
+release_date = '' # use dd/mm/yy, leave empty for todays date
 
-collection_name = "Data dictionary"
-
-list_of_all_topics = ['demography', 'international migration', 'UK armed forces veterans', 'eilr', 'labour market', 'travel to work'] 
+list_of_all_topics = [
+        'demography', 'international migration', 'UK armed forces veterans', 
+        'eilr', 'labour market', 'travel to work', 
+        'housing', 'sogi', 'education', 'health'
+        ] 
 
 pages_to_run = {
         "dd_landing_page": False, # only - True/False
         "variables_by_topic_landing_page": False, # only - True/False TODO -> only True if all topics included in topic_dict
-        "list_of_variables_landing_page": True, # only - True/False
+        "list_of_variables_landing_page": False, # only - True/False
         "variables_page": True, # only - True/False
         "classifications_page": True, # only - True/False
-        "topics": ['eilr', 'labour market', 'travel to work'], # * for all, otherwise specify
+        "topics": ["*"], # * for all, otherwise specify
         "variables": ["*"] # * for all, otherwise specify
         }
+
 
 
 class making_request():
@@ -90,17 +95,21 @@ class making_request():
 
 
 class data_dictionary_upload(making_request):
-    def __init__(self, environment, collection_name, dict_of_pages_to_upload):
+    def __init__(self, environment, collection_name, dict_of_pages_to_upload, release_date):
         self.environment = environment
         self.dict_of_pages_to_upload = dict_of_pages_to_upload
         self.collection_name = collection_name
-        self.release_date = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%dT00:00:00.000Z')
+        if not release_date:
+            self.release_date = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%dT00:00:00.000Z')
+        else:
+            self.release_date = datetime.datetime.strftime(datetime.datetime.strptime(release_date, '%d/%m/%y'), '%Y-%m-%dT00:00:00.000Z')
         self.languages = ['en', 'cy']
         
         self.get_access_token()
         self.topic_dict = get_topic_dict(self.dict_of_pages_to_upload['topics'], variables=self.dict_of_pages_to_upload['variables'])
         self.variables_uploaded = []
         self.classifications_uploaded = []
+        self.get_metadata_version_number()
           
     def run(self):
         self.get_collection_id()
@@ -160,7 +169,7 @@ class data_dictionary_upload(making_request):
             password = os.getenv('FLORENCE_PASSWORD')
             assert email != None, "FLORENCE_EMAIL not found in environment variables"
             assert password != None, "FLORENCE_PASSWORD not found in environment variables"
-            login = login = {"email": email, "password": password}
+            login = {"email": email, "password": password}
             
             login_url = f"{self.url}/login"
             r = requests.post(login_url, json=login)
@@ -280,7 +289,8 @@ class data_dictionary_upload(making_request):
                     "type":"static_landing_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name
+                    "fileName":uri_name,
+                    "topics":["7779"]
                     }
             
             if language == 'en':
@@ -360,7 +370,8 @@ class data_dictionary_upload(making_request):
                     "type":"static_landing_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name
+                    "fileName":uri_name,
+                    "topics":["7779"]
                     }
             
             if language == 'en':
@@ -446,7 +457,8 @@ class data_dictionary_upload(making_request):
                     "type":"static_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name
+                    "fileName":uri_name,
+                    "topics":["7779"]
                     }
                     
             if language == 'en':
@@ -484,17 +496,18 @@ class data_dictionary_upload(making_request):
         
         for language in self.languages:
             
-            page_title = variable_details[language]['title']
+            page_title = self.variable_title(variable_details[language]['title'], language, "variable")
             uri_name = self.slugize(variable_details['en']['title']) # used for url
             topic = self.slugize(variable_details['en']['topic_label'])
                 
+            summary = self.create_variable_summary(variable_details, language, "variable")
             markdown = self.create_static_page_markdown(variable_details, language)
             
             # static_page page
             metadata_payload = {
                     "description":{
                             "title":page_title,
-                            "summary":"",
+                            "summary":summary,
                             "releaseDate":self.release_date,
                             "keywords":[],
                             "metaDescription":"",
@@ -510,7 +523,9 @@ class data_dictionary_upload(making_request):
                     "type":"static_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name
+                    "fileName":uri_name,
+                    "topics":["7779"],
+                    "subtopics":[self.topic_code(variable_details)]
                     }
             
             if language == 'en':
@@ -553,20 +568,19 @@ class data_dictionary_upload(making_request):
             return
         
         for language in self.languages:
-            if language == 'en':
-                page_title = f"{variable_details[language]['title']} classifications"
-            elif language == 'cy':
-                page_title = f"Dosbarthiadau {self.capitalise_text(variable_details[language]['title'].lower(), 'cy')}"
+            
+            page_title = self.variable_title(variable_details[language]['title'], language, "classification") 
             uri_name = f"{self.slugize(variable_details['en']['title'])}/classifications" # used for url
             topic = self.slugize(variable_details['en']['topic_label'])
             
+            summary = self.create_variable_summary(variable_details, language, "classification")
             markdown = self.markdown_multi_classifications(variable_details, language)
             
             # static_page page
             metadata_payload = {
                     "description":{
                             "title":page_title,
-                            "summary":"",
+                            "summary":summary,
                             "releaseDate":self.release_date,
                             "keywords":[],
                             "metaDescription":"",
@@ -582,7 +596,9 @@ class data_dictionary_upload(making_request):
                     "type":"static_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name
+                    "fileName":uri_name,
+                    "topics":["7779"],
+                    "subtopics":[self.topic_code(variable_details)]
                     }
                     
             if language == 'en':
@@ -634,6 +650,8 @@ class data_dictionary_upload(making_request):
         number_of_categories = len(variable_details['en']['classifications'][classification_mnemonic]['category'])
         
         comparability_type, comparability_definition = self.comparability_text_builder(variable_details, language)
+        question = self.question_text_builder(variable_details, language)
+        question_reason = self.question_reason_text_builder(variable_details, language)
         
         if language == 'en':
             background_link = 'https://www.ons.gov.uk/census/planningforcensus2021/questiondevelopment'
@@ -656,7 +674,7 @@ Total number of categories: {number_of_categories}
 {self.quality_information_text_builder(variable_details, 'en')}
 ## **Question asked**
 
-{variable_details['en']['question']['question']}
+{question}
 
 ## **Background**
 
@@ -664,7 +682,7 @@ Read about how we [developed and tested the questions for Census 2021.]({backgro
 
 ## **Why we ask the question**
 
-{variable_details['en']['question']['reason']}
+{question_reason}
 
 ## **Comparability with the 2011 Census** 
 
@@ -700,7 +718,7 @@ Cyfanswm nifer y categorïau: {number_of_categories}
 {self.quality_information_text_builder(variable_details, 'cy')}
 ## **Cwestiwn a ofynnwyd**
 
-{variable_details['cy']['question']['question']}
+{question}
 
 ## **Cefndir**
 
@@ -708,7 +726,7 @@ Darllenwch am sut y gwnaethom [ddatblygu a phrofi'r cwestiynau ar gyfer Cyfrifia
 
 ## **Pam rydym ni’n gofyn y cwestiwn hwn**
 
-{variable_details['cy']['question']['reason']}
+{question_reason}
 
 ## **Cymharedd â Chyfrifiad 2011** 
 
@@ -917,7 +935,7 @@ Cyfanswm nifer y categorïau: {no_of_categories}
                 text += f"| {key} | {variable_details['cy']['classifications'][classification_mnemonic]['category'][key]} | \n"
             
             if multiple_classifications:
-                text += f"\nGweld pob dosbarthiad [{variable_details['cy']['title'].lower()}.]({multi_classifications_link}) \n"
+                text += f"\nGweld pob [dosbarthiad {variable_details['cy']['title'].lower()}.]({multi_classifications_link}) \n"
             
         return text
     
@@ -956,8 +974,9 @@ Cyfanswm nifer y categorïau: {no_of_categories}
         variable_mnemonic = variable_details['en']['mnemonic']
         
         if variable_details['en']['has_quality_information']:
+            comparison_link = variable_details['en']['quality_statement_url']
             
-            if language == 'en': # TODO - should wording for the link included in metadata model or not
+            if language == 'en': 
                 text = f"""
 
 ## **Quality information**
@@ -975,8 +994,7 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 
             topic = variable_details['en']['topic_label']
             if topic == 'Demography':
-                comparison_link = "/peoplepopulationandcommunity/populationandmigration/populationestimates/methodologies/demographyandmigrationqualityinformationforcensus2021"
-            
+                
                 if language == 'en':
                     text += f"""
 [Read more in our Demography and migration quality information for Census 2021 methodology.]({comparison_link})
@@ -986,9 +1004,8 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 [Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg demograffeg a mudo ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """
 
-            if topic == 'UK armed forces veterans':
-                comparison_link = "/peoplepopulationandcommunity/armedforcescommunity/methodologies/ukarmedforcesveteransqualityinformationforcensus2021" 
-            
+            elif topic == 'UK armed forces veterans':
+                
                 if language == 'en':
                     text += f"""
 [Read more in our UK armed forces veterans quality information for Census 2021 methodology.]({comparison_link})
@@ -999,7 +1016,6 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 """
 
             elif topic == 'Ethnic group, national identity, language and religion':
-                comparison_link = "/peoplepopulationandcommunity/culturalidentity/ethnicity/methodologies/ethnicgroupnationalidentitylanguageandreligionqualityinformationforcensus2021" 
                 
                 if language == 'en':
                     text += f"""
@@ -1008,6 +1024,37 @@ Cyfanswm nifer y categorïau: {no_of_categories}
                 elif language == 'cy':
                     text += f"""
 [Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg grŵp ethnig, hunaniaeth genedlaethol, iaith a chrefydd ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+""" 
+            elif topic == 'Housing':
+                
+                if language == 'en':
+                    text += f"""
+[Read more in our housing quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am dai o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
+""" 
+            elif topic == 'Education':
+                
+                if language == 'en':
+                    text += f"""
+[Read more in our Education quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am Addysg ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+""" 
+            
+            elif topic == 'Health, Disability and Unpaid Care':
+                
+                if language == 'en':
+                    text += f"""
+[Read more in our Health, disability and unpaid care quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg iechyd, anabledd a gofal di-dâl ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """ 
 
         else:
@@ -1033,6 +1080,34 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
         
         return text
     
+    def question_text_builder(self, variable_details, language):
+        # builds text of question(s)
+        if variable_details['en']['has_multi_questions']:
+            text = ''
+            for question in variable_details[language]['question']:
+                text += question['question']
+                text += '\n\n'
+                
+            text = text.strip('\n\n')
+            return text
+        
+        else:
+            return variable_details[language]['question'][0]['question']
+        
+    def question_reason_text_builder(self, variable_details, language):
+        # builds text of reason for question(s)
+        if variable_details['en']['has_multi_questions']:
+            text = ''
+            for question in variable_details[language]['question']:
+                text += question['reason']
+                text += '\n\n'
+                
+            text = text.strip('\n\n')
+            return text
+        
+        else:
+            return variable_details[language]['question'][0]['reason']
+        
     def capitalise_text(self, text, language):
         # some text is lower cased but requires certain words to be capitalised
             
@@ -1058,6 +1133,53 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
             
         return text
     
+    def variable_title(self, page_title, language, page_type):
+        # changes variable page title based on language
+        if page_type == "variable":
+            if language == 'en':
+                new_value = f"{page_title} variable: Census 2021"
+            
+            elif language == 'cy':
+                # because of the order of the welsh - variable will start with lower case
+                updated_page_title = f"{self.capitalise_text(page_title.lower(), 'cy')}"
+                new_value = f"Newidyn {updated_page_title}: Cyfrifiad 2021" 
+                
+        elif page_type == "classification":
+            if language == 'en':
+                new_value = f"{page_title} classifications: Census 2021"
+            
+            elif language == 'cy':
+                # because of the order of the welsh - variable will start with lower case
+                updated_page_title = f"{self.capitalise_text(page_title.lower(), 'cy')}"
+                new_value = f"Dosbarthiadau {updated_page_title}: Cyfrifiad 2021" 
+                
+        else:
+            raise Exception(f"Page type - '{page_type}' does not have a variable title option")
+            
+        return new_value
+    
+    def create_variable_summary(self, variable_details, language, page_type):
+        variable = self.capitalise_text(variable_details[language]['title'].lower(), language)
+        
+        if page_type == "variable":
+            if language == 'en':
+                summary_text = f"Definition of {variable}, categories, and changes since the 2011 Census for use with research and analysis using Census 2021 data."
+            
+            elif language == 'cy':
+                summary_text = f"Diffiniad o newidyn {variable}, categorïau, a newidiadau ers Cyfrifiad 2011 i'w defnyddio gydag ymchwil a dadansoddiad gan ddefnyddio data Cyfrifiad 2021."
+            
+        elif page_type == "classification":
+            if language == 'en':
+                summary_text = f"Use these groups of categories to research and analyse Census 2021 {variable} data."
+            
+            elif language == 'cy':
+                summary_text = f"Defnyddiwch y grwpiau o gategorïau yma i ymchwilio ac i ddadansoddi data {variable} Cyfrifiad 2021."
+                
+        else:
+            raise Exception(f"Page type - '{page_type}' does not have a summary option")
+            
+        return summary_text
+    
     def slugize(self, text):
         new_text = text.replace(' ', '').replace(',', '').replace('(', '').replace(')', '').lower()
         return new_text
@@ -1079,51 +1201,60 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
             
         return lookup.get(number, number)
     
+    def topic_code(self, variable_details):
+        # returns topic code to be used as subtopic
+        topic_label = variable_details['en']['topic_label'].lower().strip()
+        lookup = {
+                #"Ageing": "9731",
+                "demography":"6646",
+                "education": "3845",
+                #"Equalities": "7267",
+                "ethnic group, national identity, language and religion": "9497",
+                "health, disability and unpaid care": "4262",
+                #"Historic census": "8463",
+                "housing": "4128",
+                "international migration": "7755",
+                "labour market": "4994",
+                "sexual orientation and gender identity": "6885",
+                "travel to work": "9724",
+                "uk armed forces veterans": "7367"
+                }
+        return lookup[topic_label]
+    
+    def get_metadata_version_number(self):
+        print(f"Using metadata from {location.split('/')[1]}")
+        
+    def variable_links_text_builder(self, variable_details, language):
+        # creates the section that has links to where the variable is used
+        # TODO 
+        # - get links & text for links
+        # - get Welsh
+        # - is it for all variables?
+        # - are variable_details needed - would mnemonic be enough?
+        # - implement method
+        if language == "en":
+            text = """
+### **Census 2021 data that uses this variable**
+
+We use variables from Census 2021 data to show findings in different ways.
+
+You can:
+* [get the age dataset]()
+* [view the age data on a map]()
+* [read about how an area has changed in 10 years]()
+* [view age data for an area on Nomis (an Office for National Statistics service)]()
+
+**Other datasets that use this variable**
+"""
+        elif language == "cy":
+            text = """"""
+            
+        return text
+
+            
     
     
 
 
 if __name__ == '__main__':
-    dd = data_dictionary_upload(environment, collection_name, pages_to_run)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    dd = data_dictionary_upload(environment, collection_name, pages_to_run, release_date)
