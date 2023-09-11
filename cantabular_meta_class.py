@@ -1,10 +1,10 @@
 import datetime, os, time, requests
-from cantabular_request import get_variable_details
+from cantabular_request import get_variable_details, get_measurements_used_dict, get_datasets_dict, get_rich_content_dict, get_area_type_dict, check_byo_only_variables, location
 from data_dict_dicts import get_topic_dict
 
 environment = "test"
-collection_name = "Data dict SEO update"
-release_date = '' # use dd/mm/yy, leave empty for todays date
+collection_name = "Data dictionary update"
+release_date = '06/09/23' # use dd/mm/yy, leave empty for todays date
 
 list_of_all_topics = [
         'demography', 'international migration', 'UK armed forces veterans', 
@@ -15,13 +15,64 @@ list_of_all_topics = [
 pages_to_run = {
         "dd_landing_page": False, # only - True/False
         "variables_by_topic_landing_page": False, # only - True/False TODO -> only True if all topics included in topic_dict
+        "measurements_used_page": False, # only True/False
+        "area_type_definitions_page": False, # only True/False
         "list_of_variables_landing_page": False, # only - True/False
         "variables_page": True, # only - True/False
         "classifications_page": True, # only - True/False
-        "topics": ["*"], # * for all, otherwise specify
-        "variables": ["*"] # * for all, otherwise specify
+        "topics": ["demography"] , # * for all, otherwise specify
+        "variables": ['resident_age', 'sex', 'hh_dependent_children', 'hrp_age', 'family_status', 'hh_family_composition',
+        'migration_country_inflow', 'migration_country_outflow', 
+        'migration_lsoa_inflow', 'migration_lsoa_outflow', 
+        'migration_national_inflow',
+        'migration_ltla_inflow', 'migration_ltla_outflow',
+        'migration_msoa_inflow', 'migration_msoa_outflow',
+        'migration_region_inflow', 'migration_region_outflow', 
+        'migration_utla_inflow', 'migration_utla_outflow',
+        'migration_oa_inflow', 'migration_oa_outflow', 
+        'hh_migration_ltla_inflow', 'hh_migration_ltla_outflow',
+        'hh_migration_region_inflow','hh_migration_region_outflow', 
+        'hh_migration_country_inflow','hh_migration_country_outflow',
+        'hh_migration_national_inflow', 
+        'hh_migration_msoa_inflow', 'hh_migration_msoa_outflow',
+        'hh_migration_utla_inflow', 'hh_migration_utla_outflow'] # * for all, otherwise specify
         }
 
+"""
+'demography': 
+    'resident_age', 'sex', 'hh_dependent_children', 'hrp_age', 'family_status', 'hh_family_composition',
+    'migration_country_inflow', 'migration_country_outflow', 
+    'migration_lsoa_inflow', 'migration_lsoa_outflow', 
+    'migration_national_inflow',
+    'migration_ltla_inflow', 'migration_ltla_outflow',
+    'migration_msoa_inflow', 'migration_msoa_outflow',
+    'migration_region_inflow', 'migration_region_outflow', 
+    'migration_utla_inflow', 'migration_utla_outflow',
+    'migration_oa_inflow', 'migration_oa_outflow', 
+    
+    'hh_migration_ltla_inflow', 'hh_migration_ltla_outflow',
+    'hh_migration_region_inflow','hh_migration_region_outflow', 
+    'hh_migration_country_inflow','hh_migration_country_outflow',
+    'hh_migration_national_inflow', 
+    'hh_migration_msoa_inflow', 'hh_migration_msoa_outflow',
+    'hh_migration_utla_inflow', 'hh_migration_utla_outflow', 
+    
+    
+'labour market': 
+    'ns_sec', 'hrp_ns_sec', 'hrp_economic_activity', 'hours_per_week_worked', 'economic_activity',
+    
+'health':
+    'disability',
+    
+'housing':
+    'hh_tenure',
+    
+'eilr':
+    'ethnic_group_tb',
+    
+'sogi':
+    'gender_identity',
+"""
 
 
 class making_request():
@@ -108,8 +159,12 @@ class data_dictionary_upload(making_request):
         self.get_access_token()
         self.topic_dict = get_topic_dict(self.dict_of_pages_to_upload['topics'], variables=self.dict_of_pages_to_upload['variables'])
         self.variables_uploaded = []
+        self.variables_not_uploaded = []
         self.classifications_uploaded = []
         self.get_metadata_version_number()
+        self.datasets_dict = get_datasets_dict()
+        self.rich_content_links = get_rich_content_dict()
+        check_byo_only_variables()
           
     def run(self):
         self.get_collection_id()
@@ -124,6 +179,16 @@ class data_dictionary_upload(making_request):
             self.create_variable_by_topic_landing_page()
             time.sleep(1)
             
+        if self.dict_of_pages_to_upload['measurements_used_page']:
+            # creates measurements used page - mostly will be left untouched
+            self.create_measurements_used_page()
+            time.sleep(1) 
+            
+        if self.dict_of_pages_to_upload['area_type_definitions_page']:
+            # creates area type definitions page - mostly will be left untouched
+            self.create_area_type_definitions_page()
+            time.sleep(1) 
+        
         if self.dict_of_pages_to_upload['list_of_variables_landing_page']:
             # creates list of variables page for each included topic
             if self.dict_of_pages_to_upload['variables'] != ["*"]:
@@ -141,6 +206,7 @@ class data_dictionary_upload(making_request):
                         variable_details = get_variable_details(variable)
                     except:
                         print(f'could not find varibale - {variable}')
+                        self.variables_not_uploaded.append(variable)
                         
                     self.create_variable_page(variable_details)
                    
@@ -235,7 +301,8 @@ class data_dictionary_upload(making_request):
         
     def create_dd_landing_page(self):
         # creates landing page for the data dictionary
-        # POSTs to /census
+        # POSTs to /census/census2021dictionary
+        
         uri_name = 'census2021dictionary'
         
         for language in self.languages:
@@ -243,30 +310,59 @@ class data_dictionary_upload(making_request):
             page_info = {
                     'en': {
                             'page_title': 'Census 2021 dictionary',
-                            'page_summary': 'Definitions, variables and classifications to help when using Census 2021 data.',
-                            'section_title': 'Variables by topic',
-                            'section_summary': 'Variables for use with research and analysis using Census 2021 data.'
+                            'page_summary': 'Definitions, variables and classifications to help when using Census 2021 data.'
                             },
                     'cy': {
                             'page_title': 'Geiriadur Cyfrifiad 2021', 
-                            'page_summary': 'Diffiniadau, newidynnau a dosbarthiadau er mwyn helpu wrth ddefnyddio data Cyfrifiad 2021.',
+                            'page_summary': 'Diffiniadau, newidynnau a dosbarthiadau er mwyn helpu wrth ddefnyddio data Cyfrifiad 2021.'
+                            }
+                    }
+
+            section_info = [{
+                    'en': {
+                            'section_title': 'Area type definitions',
+                            'section_summary': 'Includes definitions for countries, electoral wards, Output Areas (OAs) and health areas.',
+                            'section_uri': f'/census/{uri_name}/areatypedefinitions' 
+                            },
+                    'cy': {
+                            'section_title': 'Diffiniadau math o ardal',
+                            'section_summary': 'Yn cynnwys diffiniadau ar gyfer gwledydd, wardiau etholiadol, Ardaloedd Gynnyrch (OA) ac ardaloedd iechyd.'
+                            }
+                        },
+                    {
+                    'en': {
+                            'section_title': 'Measurements used in Census 2021 data',
+                            'section_summary': 'Includes definitions for usual resident, person, household, family and communal establishment.',
+                            'section_uri': f'/census/{uri_name}/measurementsusedincensus2021data' 
+                            },
+                    'cy': {
+                            'section_title': 'Mesuriadau a ddefnyddiwyd yn nata Cyfrifiad 2021',
+                            'section_summary': 'Yn cynnwys diffiniadau ar gyfer preswylydd arferol, cartref, teulu a sefydliad cymunedol.'
+                            }
+                        },
+                    {
+                    'en': {
+                            'section_title': 'Variables by topic',
+                            'section_summary': 'Variables for use with research and analysis using Census 2021 data.',
+                            'section_uri': f'/census/{uri_name}/variablesbytopic'
+                            },
+                    'cy': {
                             'section_title': 'Newidynnau yn ôl pwnc',
                             'section_summary': "Newidynnau i'w defnyddio wrth ymchwilio a dadansoddi gan ddefnyddio data Cyfrifiad 2021."
                             }
-                    }
+                        }   
+                    ]
             
             page_title = page_info[language]['page_title']
-            page_summary = page_info[language]['page_summary']
-            section_title = page_info[language]['section_title']
-            section_summary = page_info[language]['section_summary']
+            page_summary = page_info[language]['page_summary']            
             
-            sections = [
-                    {
-                        'title': section_title,
-                        'summary': section_summary,
-                        'uri': f'/census/{uri_name}/variablesbytopic' 
-                            }
-                    ]
+            sections = []
+            for section in section_info:
+                loop_dict = {}
+                loop_dict['title'] = section[language]['section_title']
+                loop_dict['summary'] = section[language]['section_summary']
+                loop_dict['uri'] = section['en']['section_uri']
+                sections.append(loop_dict)
             
             # static_landing_page 
             metadata_payload = {
@@ -277,7 +373,8 @@ class data_dictionary_upload(making_request):
                             "keywords":[],
                             "metaDescription":"",
                             "language":language,
-                            "survey":"census"
+                            "survey":"census",
+                            "canonicalTopic":"7779"
                             },
                     "markdown":[],
                     "sections":sections,
@@ -289,8 +386,7 @@ class data_dictionary_upload(making_request):
                     "type":"static_landing_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name,
-                    "topics":["7779"]
+                    "fileName":uri_name
                     }
             
             if language == 'en':
@@ -321,9 +417,8 @@ class data_dictionary_upload(making_request):
     
     def create_variable_by_topic_landing_page(self):
         # creates landing page for each topic
-        # POSTs to /census
+        # POSTs to /census/census2021dictionary/variablesbytopic
         
-        dd_location = 'census2021dictionary'
         uri_name = 'variablesbytopic'
         
         for language in self.languages:
@@ -358,7 +453,8 @@ class data_dictionary_upload(making_request):
                             "keywords":[],
                             "metaDescription":"",
                             "language":language,
-                            "survey":"census"
+                            "survey":"census",
+                            "canonicalTopic":"7779"
                             },
                     "markdown":[],
                     "sections":sections,
@@ -370,15 +466,14 @@ class data_dictionary_upload(making_request):
                     "type":"static_landing_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name,
-                    "topics":["7779"]
+                    "fileName":uri_name
                     }
             
             if language == 'en':
-                uri = f"/census/{dd_location}/{uri_name}/data.json"
+                uri = f"/census/census2021dictionary/{uri_name}/data.json"
                 
             elif language == 'cy':
-                uri = f"/census/{dd_location}/{uri_name}/data_cy.json"
+                uri = f"/census/census2021dictionary/{uri_name}/data_cy.json"
             
             if self.environment == "prod" or self.environment == "test":
                 content_path = f"/content/{self.collection_id}?uri={uri}"
@@ -398,9 +493,151 @@ class data_dictionary_upload(making_request):
             
         return
     
+    def create_measurements_used_page(self):
+        # creates landing page for measurements used 
+        # POSTs to /census/census2021dictionary/measurementsusedincensus2021data
+        
+        uri_name = 'measurementsusedincensus2021data'
+        
+        page_info = {
+                'en': {
+                        'page_title': 'Measurements used in Census 2021 data',
+                        'page_summary': 'Definitions of the measurements we collected data on for Census 2021.'
+                        },
+                'cy': {
+                        'page_title': 'Mesuriadau a ddefnyddiwyd yn nata Cyfrifiad 2021', 
+                        'page_summary': "Diffiniadau o'r mesuriadau y gwnaethom gasglu data arnynt ar gyfer Cyfrifiad 2021."
+                        }
+                }
+        
+        for language in self.languages:
+            
+            page_title = page_info[language]['page_title']
+            page_summary = page_info[language]['page_summary']
+            markdown = self.get_measurements_used_markdown(language)
+            
+            # static_page page
+            metadata_payload = {
+                    "description":{
+                            "title":page_title,
+                            "summary":page_summary,
+                            "releaseDate":self.release_date,
+                            "keywords":[],
+                            "metaDescription":"",
+                            "language":language,
+                            "survey":"census",
+                            "canonicalTopic":"7779"
+                            },
+                    "markdown":[markdown],
+                    "charts":[],
+                    "tables":[],
+                    "equations":[],
+                    "images":[],
+                    "downloads":[],
+                    "type":"static_page",
+                    "anchors":[],
+                    "links":[],
+                    "fileName":uri_name
+                    }
+                    
+            if language == 'en':
+                uri = f"/census/census2021dictionary/{uri_name}/data.json"
+                
+            elif language == 'cy':
+                uri = f"/census/census2021dictionary/{uri_name}/data_cy.json"
+            
+            if self.environment == "prod" or self.environment == "test":
+                content_path = f"/content/{self.collection_id}?uri={uri}"
+                review_path = f"/complete/{self.collection_id}?uri={uri}"
+            
+            elif self.environment == "sandbox":
+                content_path = f"/zebedee/content/{self.collection_id}?uri={uri}"
+                review_path = f"/zebedee/complete/{self.collection_id}?uri={uri}"
+                
+            content_url = f"{self.url}{content_path}"
+            review_url = f"{self.url}{review_path}"
+                
+            self.curl_request('post', content_url, json=metadata_payload)
+            print(f"Measurements used page sent - {language}")
+            self.send_for_review(review_url)
+            print(f"Measurements used page reviewed")
+            
+        return 
+    
+    def create_area_type_definitions_page(self):
+        # creates landing page for area types 
+        # POSTs to /census/census2021dictionary/areatypedefinitions
+        
+        uri_name = 'areatypedefinitions'
+        
+        page_info = {
+                'en': {
+                        'page_title': 'Area type definitions Census 2021',
+                        'page_summary': 'Definitions of area types that you can get Census 2021 data on, includes countries, electoral wards, Output Areas (OAs) and health areas.'
+                        },
+                'cy': {
+                        'page_title': 'Diffiniadau o fathau o ardaloedd yng Nghyfrifiad 2021', 
+                        'page_summary': 'Ymysg y diffiniadau o fathau o ardaloedd y gallwch gael data Cyfrifiad 2021 arnynt mae gwledydd, wardiau etholiadol, Ardaloedd Cynnyrch ac ardaloedd iechyd.'
+                        }
+                }
+                
+        for language in self.languages:
+            
+            page_title = page_info[language]['page_title']
+            page_summary = page_info[language]['page_summary']
+            markdown = self.get_area_type_markdown(language)
+            
+            # static_page page
+            metadata_payload = {
+                    "description":{
+                            "title":page_title,
+                            "summary":page_summary,
+                            "releaseDate":self.release_date,
+                            "keywords":[],
+                            "metaDescription":"",
+                            "language":language,
+                            "survey":"census",
+                            "canonicalTopic":"7779"
+                            },
+                    "markdown":[markdown],
+                    "charts":[],
+                    "tables":[],
+                    "equations":[],
+                    "images":[],
+                    "downloads":[],
+                    "type":"static_page",
+                    "anchors":[],
+                    "links":[],
+                    "fileName":uri_name
+                    }
+                    
+            if language == 'en':
+                uri = f"/census/census2021dictionary/{uri_name}/data.json"
+                
+            elif language == 'cy':
+                uri = f"/census/census2021dictionary/{uri_name}/data_cy.json"
+            
+            if self.environment == "prod" or self.environment == "test":
+                content_path = f"/content/{self.collection_id}?uri={uri}"
+                review_path = f"/complete/{self.collection_id}?uri={uri}"
+            
+            elif self.environment == "sandbox":
+                content_path = f"/zebedee/content/{self.collection_id}?uri={uri}"
+                review_path = f"/zebedee/complete/{self.collection_id}?uri={uri}"
+                
+            content_url = f"{self.url}{content_path}"
+            review_url = f"{self.url}{review_path}"
+                
+            self.curl_request('post', content_url, json=metadata_payload)
+            print(f"Area type page sent - {language}")
+            self.send_for_review(review_url)
+            print(f"Area type page reviewed")
+            
+        return         
+        
     def create_list_of_variables_page(self, topic):
         # creates a page listing all variables for each topic
-        # POSTs to /census
+        # POSTs to /census/census2021dictionary/variablesbytopic/<topic>
         
         topic_location = f"census2021dictionary/variablesbytopic"
         uri_name = self.topic_dict[topic]['en']['uri_ending_topic_page']
@@ -446,7 +683,9 @@ class data_dictionary_upload(making_request):
                             "keywords":[],
                             "metaDescription":"",
                             "language":language,
-                            "survey":"census"
+                            "survey":"census",
+                            "canonicalTopic":"7779",
+                            "secondaryTopics":[self.topic_lookup(topic)]
                             },
                     "markdown":[markdown],
                     "charts":[],
@@ -457,8 +696,7 @@ class data_dictionary_upload(making_request):
                     "type":"static_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name,
-                    "topics":["7779"]
+                    "fileName":uri_name
                     }
                     
             if language == 'en':
@@ -483,7 +721,7 @@ class data_dictionary_upload(making_request):
             self.send_for_review(review_url)
             print(f"{topic} - list of variables page reviewed")
             
-        return markdown
+        return 
     
     def create_variable_page(self, variable_details):
         # currently creates a static_page 
@@ -512,7 +750,9 @@ class data_dictionary_upload(making_request):
                             "keywords":[],
                             "metaDescription":"",
                             "language":language,
-                            "survey":"census"
+                            "survey":"census",
+                            "canonicalTopic":"7779",
+                            "secondaryTopics":[self.topic_code(variable_details)]
                             },
                     "markdown":[markdown],
                     "charts":[],
@@ -523,9 +763,7 @@ class data_dictionary_upload(making_request):
                     "type":"static_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name,
-                    "topics":["7779"],
-                    "subtopics":[self.topic_code(variable_details)]
+                    "fileName":uri_name
                     }
             
             if language == 'en':
@@ -585,7 +823,9 @@ class data_dictionary_upload(making_request):
                             "keywords":[],
                             "metaDescription":"",
                             "language":language,
-                            "survey":"census"
+                            "survey":"census",
+                            "canonicalTopic":"7779",
+                            "secondaryTopics":[self.topic_code(variable_details)]
                             },
                     "markdown":[markdown],
                     "charts":[],
@@ -596,9 +836,7 @@ class data_dictionary_upload(making_request):
                     "type":"static_page",
                     "anchors":[],
                     "links":[],
-                    "fileName":uri_name,
-                    "topics":["7779"],
-                    "subtopics":[self.topic_code(variable_details)]
+                    "fileName":uri_name
                     }
                     
             if language == 'en':
@@ -633,6 +871,86 @@ class data_dictionary_upload(making_request):
         
         return
             
+    def get_measurements_used_markdown(self, language):
+         # markdown for the measurements used page
+         measurements_dict = get_measurements_used_dict()
+         
+         if language == 'en':
+             markdown = """
+## **Overview**
+
+Census 2021 statistics are published from information collected about people and their households. We group data together based on who the information is about, for example individuals or households.
+
+## **Usual resident**
+
+A usual resident is anyone who on Census Day, 21 March 2021, was in the UK and had stayed or intended to stay in the UK for a period of 12 months or more or had a permanent UK address and was outside the UK and intended to be outside the UK for less than 12 months.
+"""
+         elif language == 'cy':
+            markdown = """
+## **Trosolwg**
+
+Caiff ystadegau Cyfrifiad 2021 eu cyhoeddi o wybodaeth a gasglwyd am bobl a'u cartrefi. Rydym yn grwpio data gyda'i gilydd yn seiliedig ar bwy y mae'r wybodaeth yn cyfeirio ato, er enghraifft unigolion neu gartrefi.
+
+## **Preswylydd arferol**
+
+Ystyr preswylydd arferol yw unrhyw un a oedd, ar Ddiwrnod y Cyfrifiad, sef 21 Mawrth 2021, yn y Deyrnas Unedig ac wedi aros neu’n bwriadu aros yn y Deyrnas Unedig am gyfnod o 12 mis neu fwy, neu a oedd â chyfeiriad parhaol yn y Deyrnas Unedig ac a oedd y tu allan i’r Deyrnas Unedig ac yn bwriadu aros y tu allan i’r Deyrnas Unedig am lai na 12 mis.
+"""
+         for unit in ("Person", "hh_reference_person_pop", "Household", "Family", "Communal Establishment", "Dwelling", "uprn"):
+            markdown += f"""
+## **{measurements_dict[unit][language]['label']}**
+
+{measurements_dict[unit][language]['description']}
+"""
+         return markdown
+     
+    def get_area_type_markdown(self, language):
+        # markdown for the area type page  
+        
+        if language == 'en':
+            markdown = """
+## **Overview**
+
+Census 2021 statistics are published for a number of different geographies. These can be large, for example the whole of England, or small, for example an Output Area (OA), the lowest level of geography for which statistics are produced.
+For higher levels of geography, more detailed statistics can be produced. When a lower level of geography is used, such as Output Areas (which have a minimum of 100 persons), the statistics produced have less detail. This is to protect the confidentiality of people and ensure that individuals or their characteristics cannot be identified.
+"""
+        elif language == 'cy':
+            markdown = """
+## **Trosolwg**
+            
+Caiff ystadegau Cyfrifiad 2021 eu cyhoeddi ar gyfer nifer o ardaloedd daearyddol gwahanol. Gall y rhain fod yn fawr, er enghraifft Lloegr gyfan, neu'n fach, er enghraifft Ardal Gynnyrch, sef y lefel isaf o ardal ddaearyddol y caiff ystadegau eu cynhyrchu ar ei chyfer.
+Ar gyfer lefelau uwch o ardaloedd daearyddol, gellir cynhyrchu ystadegau manylach. Pan gaiff lefel ddaearyddol is ei defnyddio, fel Ardaloedd Cynnyrch (sy'n cynnwys o leiaf 100 o bobl), mae'r ystadegau a gynhyrchir yn llai manwl. Diben hyn yw diogelu cyfrinachedd pobl a sicrhau na ellir adnabod unigolion na'u nodweddion.
+"""
+        for area in (
+                "England and Wales", "Countries", "Regions", "NHS England regions", 
+                "Local health boards", "Integrated care boards",  "Sub integrated care board locations", 
+                "2023 Upper tier local authorities", "2023 Lower tier local authorities",
+                "Upper tier local authorities", "Lower tier local authorities", 
+                "Westminster Parliamentary constituencies", "Electoral wards and divisions", "Parishes",
+                #"Senedd electoral regions", 
+                "Senedd constituencies", "Middle layer Super Output Areas", 
+                "Lower layer Super Output Areas", "Output Areas", "Local enterprise partnerships", "National Parks"
+                ):
+            
+            area_dict = get_area_type_dict(area)
+            markdown += f"""
+## **{area_dict[language]['title']}**
+            
+{area_dict[language]['description']}
+"""
+        if language == 'en':
+            markdown += """
+## **Changes between 2011 Census and Census 2021 geographies**
+            
+Find out what changes have been made to [geographies used in Census 2021 results.](/methodology/geography/ukgeographies/censusgeographies/census2021geographies)
+"""
+        elif language == 'cy':
+            markdown += """
+## **Newidiadau rhwng ardaloedd daearyddol Cyfrifiad 2011 a Chyfrifiad 2021**
+            
+Dysgwch pa newidiadau a wnaed i'r [ardaloedd daearyddol a ddefnyddiwyd yng nghanlyniadau Cyfrifiad 2021 (yn Saesneg).](/methodology/geography/ukgeographies/censusgeographies/census2021geographies)
+"""
+        return markdown
+         
     def create_static_page_markdown(self, variable_details, language):
         variable_type = variable_details['en']['type_label']
         
@@ -653,10 +971,11 @@ class data_dictionary_upload(making_request):
         question = self.question_text_builder(variable_details, language)
         question_reason = self.question_reason_text_builder(variable_details, language)
         
-        if language == 'en':
-            background_link = 'https://www.ons.gov.uk/census/planningforcensus2021/questiondevelopment'
-            comparison_link = 'https://www.ons.gov.uk/census/planningforcensus2021/ukcensusdata'
+        background_link = '/census/planningforcensus2021/questiondevelopment'
+        comparison_link = '/census/planningforcensus2021/ukcensusdata'
         
+        
+        if language == 'en':
             markdown = f"""
 **Mnemonic:** {variable_details['en']['mnemonic']}  
 **Applicability:** {variable_details['en']['statistical unit']}   
@@ -695,12 +1014,10 @@ Read about how we [developed and tested the questions for Census 2021.]({backgro
 ## **England, Wales, Northern Ireland and Scotland comparisons**
 
 This information is not yet available. Find out more about [UK Census data.]({comparison_link})
+{self.variable_links_text_builder(variable_details, 'en')}
 
 """
         elif language == 'cy':
-            background_link = 'https://cy.ons.gov.uk/census/planningforcensus2021/questiondevelopment'
-            comparison_link = 'https://cy.ons.gov.uk/census/planningforcensus2021/ukcensusdata'
-    
             markdown = f"""
 **Cofair:** {variable_details['cy']['mnemonic']}  
 **Cymhwysedd:** {variable_details['cy']['statistical unit']}   
@@ -739,6 +1056,7 @@ Darllenwch am sut y gwnaethom [ddatblygu a phrofi'r cwestiynau ar gyfer Cyfrifia
 ## **Cymariaethau rhwng Cymru, Lloegr, Gogledd Iwerddon a'r Alban**
 
 Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Unedig.]({comparison_link})
+{self.variable_links_text_builder(variable_details, 'cy')}
 
 """
         return markdown
@@ -750,11 +1068,11 @@ Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Un
         
         comparability_type, comparability_definition = self.comparability_text_builder(variable_details, language)
         
+        background_link = '/census/planningforcensus2021/questiondevelopment'
+        comparison_link = '/census/planningforcensus2021/ukcensusdata'
+        
+        
         if language == 'en':
-            background_link = 'https://www.ons.gov.uk/census/planningforcensus2021/questiondevelopment'
-            comparison_link = 'https://www.ons.gov.uk/census/planningforcensus2021/ukcensusdata'
-        
-        
             markdown = f"""
 **Mnemonic:** {variable_details['en']['mnemonic']}  
 **Applicability:** {variable_details['en']['statistical unit']}   
@@ -785,13 +1103,10 @@ Read about how we [developed and tested the questions for Census 2021.]({backgro
 ## **England, Wales, Northern Ireland and Scotland comparisons**
 
 This information is not yet available. Find out more about [UK Census data.]({comparison_link})
+{self.variable_links_text_builder(variable_details, 'en')}
 
 """
-    
         elif language == 'cy':
-            background_link = 'https://cy.ons.gov.uk/census/planningforcensus2021/questiondevelopment'
-            comparison_link = 'https://cy.ons.gov.uk/census/planningforcensus2021/ukcensusdata'
-            
             markdown = f"""
 **Cofair:** {variable_details['cy']['mnemonic']}  
 **Cymhwysedd:** {variable_details['cy']['statistical unit']}   
@@ -822,6 +1137,7 @@ Darllenwch am sut y gwnaethom [ddatblygu a phrofi'r cwestiynau ar gyfer Cyfrifia
 ## **Cymariaethau rhwng Cymru, Lloegr, Gogledd Iwerddon a'r Alban**
 
 Nid yw'r wybodaeth hon ar gael eto. Dysgwch fwy am [ddata cyfrifiad y Deyrnas Unedig.]({comparison_link})
+{self.variable_links_text_builder(variable_details, 'cy')}
 
 """
         return markdown
@@ -856,7 +1172,6 @@ Mae gan newidyn {self.capitalise_text(variable_title.lower(), 'cy')} {self.numbe
 Pan gaiff data eu didoli, byddwn yn grwpio categorïau am yr un pwnc gyda'i gilydd. “Dosbarthiad” yw'r enw am grŵp o gategorïau.  Mae'n bosibl cael mwy nag un dosbarthiad am yr un pwnc ac mae pob un yn wahanol. Dylech ddewis yr un sydd fwyaf addas ar gyfer eich ymchwil a'ch dadansoddiad.
 
 """
-    
         for classification in variable_details['en']['multi_classifications']:
             # build a new 'variable dict to send to classification_text_builder
             mnemonic = variable_details[language]['mnemonic']
@@ -877,7 +1192,6 @@ Pan gaiff data eu didoli, byddwn yn grwpio categorïau am yr un pwnc gyda'i gily
 
 Total number of categories: {no_of_categories}
 """
-            
             elif language == 'cy':
                 markdown += f"""
 ## **Dosbarthiad{classification_code} {self.capitalise_text(variable_title.lower(), 'cy')}** 
@@ -886,7 +1200,6 @@ Total number of categories: {no_of_categories}
 
 Cyfanswm nifer y categorïau: {no_of_categories}
 """
-            
             variable_details_to_send = variable_details.copy()
             variable_details_to_send['en']['preferred_classification'] = classification
             variable_details_to_send['cy']['preferred_classification'] = classification
@@ -923,7 +1236,7 @@ Cyfanswm nifer y categorïau: {no_of_categories}
                 text += f"| {key} | {variable_details['en']['classifications'][classification_mnemonic]['category'][key]} | \n"
             
             if multiple_classifications:
-                text += f"\nView all [{variable_details['en']['title'].lower()} classifications.]({multi_classifications_link}) \n"
+                text += f"\nView all [{self.capitalise_text(variable_details['en']['title'].lower(), 'en')} classifications.]({multi_classifications_link}) \n"
             
         elif language == 'cy':
         
@@ -935,7 +1248,7 @@ Cyfanswm nifer y categorïau: {no_of_categories}
                 text += f"| {key} | {variable_details['cy']['classifications'][classification_mnemonic]['category'][key]} | \n"
             
             if multiple_classifications:
-                text += f"\nGweld pob [dosbarthiad {variable_details['cy']['title'].lower()}.]({multi_classifications_link}) \n"
+                text += f"\nGweld pob [dosbarthiad {self.capitalise_text(variable_details['cy']['title'].lower(), 'cy')}.]({multi_classifications_link}) \n"
             
         return text
     
@@ -983,7 +1296,6 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 
 {variable_details['en']['quality_statement']}
 """
-
             elif language == 'cy':
                 text = f"""
 
@@ -991,9 +1303,8 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 
 {variable_details['cy']['quality_statement']}
 """
-
-            topic = variable_details['en']['topic_label']
-            if topic == 'Demography':
+            topic = variable_details['en']['topic_label'].lower()
+            if topic == 'demography':
                 
                 if language == 'en':
                     text += f"""
@@ -1001,10 +1312,19 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 """
                 elif language == 'cy':
                     text += f"""
-[Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg demograffeg a mudo ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am ddemograffeg a mudo o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """
-
-            elif topic == 'UK armed forces veterans':
+            elif topic == 'international migration':
+                
+                if language == 'en':
+                    text += f"""
+[Read more in our Demography and migration quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am ddemograffeg a mudo o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
+"""
+            elif topic == 'uk armed forces veterans':
                 
                 if language == 'en':
                     text += f"""
@@ -1012,10 +1332,9 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 """
                 elif language == 'cy':
                     text += f"""
-[Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg cyn-filwyr lluoedd arfog y Deyrnas Unedig ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am gyn-filwyr lluoedd arfog y Deyrnas Unedig o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """
-
-            elif topic == 'Ethnic group, national identity, language and religion':
+            elif topic == 'ethnic group, national identity, language and religion':
                 
                 if language == 'en':
                     text += f"""
@@ -1023,9 +1342,9 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 """
                 elif language == 'cy':
                     text += f"""
-[Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg grŵp ethnig, hunaniaeth genedlaethol, iaith a chrefydd ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data grŵp ethnig, hunaniaeth genedlaethol, iaith a chrefydd o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """ 
-            elif topic == 'Housing':
+            elif topic == 'housing':
                 
                 if language == 'en':
                     text += f"""
@@ -1035,7 +1354,7 @@ Cyfanswm nifer y categorïau: {no_of_categories}
                     text += f"""
 [Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am dai o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """ 
-            elif topic == 'Education':
+            elif topic == 'education':
                 
                 if language == 'en':
                     text += f"""
@@ -1043,10 +1362,9 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 """
                 elif language == 'cy':
                     text += f"""
-[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am Addysg ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am addysg o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """ 
-            
-            elif topic == 'Health, Disability and Unpaid Care':
+            elif topic == 'health, disability and unpaid care':
                 
                 if language == 'en':
                     text += f"""
@@ -1054,9 +1372,38 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 """
                 elif language == 'cy':
                     text += f"""
-[Darllenwch fwy yn ein Gwybodaeth am ansawdd a methodoleg iechyd, anabledd a gofal di-dâl ar gyfer Cyfrifiad 2021 (yn Saesneg).]({comparison_link})
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am iechyd, anabledd a gofal di-dâl o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
 """ 
-
+            elif topic == 'labour market':
+                
+                if language == 'en':
+                    text += f"""
+[Read more in our Labour market quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data’r farchnad lafur o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
+""" 
+            elif topic == 'sexual orientation and gender identity':
+                
+                if language == 'en':
+                    text += f"""
+[Read more in our Sexual orientation and gender identity quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am gyfeiriadedd rhywiol a hunaniaeth o ran rhywedd o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
+""" 
+            elif topic == 'travel to work':
+                
+                if language == 'en':
+                    text += f"""
+[Read more in our Travel to work quality information for Census 2021 methodology.]({comparison_link})
+"""
+                elif language == 'cy':
+                    text += f"""
+[Darllenwch fwy yn ein methodoleg ar wybodaeth am ansawdd data am deithio i'r gwaith o Gyfrifiad 2021 (yn Saesneg).]({comparison_link})
+""" 
         else:
             text = ""
             
@@ -1069,7 +1416,6 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 
 There are some quality issues in the data that may affect how you use the data.
 """
-        
             elif language == 'cy':
                 text = f"""
 
@@ -1077,7 +1423,6 @@ There are some quality issues in the data that may affect how you use the data.
 
 Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defnyddio’r data.
 """
-        
         return text
     
     def question_text_builder(self, variable_details, language):
@@ -1115,12 +1460,39 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
             if "uk " in text:
                 text = text.replace("uk ", "UK ")
                 
+            if " uk" in text:
+                text = text.replace(" uk", " UK") # could this has impacts elsewhere?
+                
             if "english" in text:
                 text = text.replace("english", "English")
                 
             if "welsh" in text:
                 text = text.replace("welsh", "Welsh")
-        
+                
+            if "(voa)" in text:
+                text = text.replace("(voa)", "(VOA)")
+                
+            if "ltla" in text:
+                text = text.replace("ltla", "LTLA")
+                
+            if "utla" in text:
+                text = text.replace("utla", "UTLA")
+                
+            if "lsoa" in text:
+                text = text.replace("lsoa", "LSOA")
+                
+            if "msoa" in text:
+                text = text.replace("msoa", "MSOA")
+                
+            if " oa " in text:
+                text = text.replace(" oa ", " OA ")
+                
+            if "ns-sec" in text:
+                text = text.replace("ns-sec", "NS-SEC")
+                
+            if "household reference person" in text:
+                text = text.replace("household reference person", "Household Reference Person")
+                
         elif language == 'cy':
             if "deyrnas unedig" in text:
                 text = text.replace("deyrnas unedig", "Deyrnas Unedig")
@@ -1130,7 +1502,52 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
                 
             if "cymraeg" in text:
                 text = text.replace("cymraeg", "Cymraeg")
+                
+            if "asiantaeth y swyddfa brisio" in text:
+                text = text.replace("asiantaeth y swyddfa brisio", "Asiantaeth y Swyddfa Brisio")
+                
+            if "ns-sec" in text:
+                text = text.replace("ns-sec", "NS-SEC")
+                
+            if ' wlad' in text:
+                text = text.replace(" wlad", "Wlad")
+                
+            if 'awdurdod lleol haen is' in text:
+                text = text.replace("awdurdod lleol haen is", "Awdurdod Lleol Haen Is")
+                
+            if 'ardal gynnyrch ehangach haen ganol' in text:
+                text = text.replace("ardal gynnyrch ehangach haen ganol", "Ardal Gynnyrch Ehangach Haen Ganol")
+                
+            if 'gymru a lloegr' in text:
+                text = text.replace("gymru a lloegr", "Gymru a Lloegr")
+                
+            if 'ranbarth' in text:
+                text = text.replace("ranbarth", "Ranbarth")
+                
+            if 'awdurdod lleol haen uchaf' in text:
+                text = text.replace("awdurdod lleol haen uchaf", "Awdurdod Lleol Haen Uchaf")
+                
+            if 'ardal gynnyrch ehangach haen is' in text:
+                text = text.replace("ardal gynnyrch ehangach haen is", "Ardal Gynnyrch Ehangach Haen Is")
+                
+            if 'ardal gynnyrch' in text:
+                text = text.replace("ardal gynnyrch", "Ardal Gynnyrch")
+                
+            if 'person cyswllt y cartref' in text:
+                text = text.replace("person cyswllt y cartref", "Person Cyswllt y Cartref")
+                
+        if text.lower() == "national statistics socio-economic classification (ns-sec)":
+            text = "National Statistics Socio-economic Classification (NS-SEC)"
             
+        if text.lower() == "dosbarthiad economaidd-gymdeithasol ystadegau gwladol (ns-sec)":
+            text = "Dosbarthiad Economaidd-gymdeithasol Ystadegau Gwladol (NS-SEC)"
+            
+        if text.lower() == "household reference person previously served in uk armed forces":
+            text = "Household Reference Person previously served in UK armed forces"
+            
+        if text.lower() == "person cyswllt y cartref wedi gwasanaethu yn lluoedd arfog y deyrnas unedig yn y gorffennol":
+            text = "Person Cyswllt y Cartref wedi gwasanaethu yn lluoedd arfog y Deyrnas Unedig yn y gorffennol"
+        
         return text
     
     def variable_title(self, page_title, language, page_type):
@@ -1186,7 +1603,7 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
     
     def number_to_text(self, number, language):
         # numbers < 10 are changed to words
-        # numbers > 10 remain as numbers
+        # numbers >= 10 remain as numbers
         number = str(number)
         if language == 'en':
             lookup = {
@@ -1205,13 +1622,10 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
         # returns topic code to be used as subtopic
         topic_label = variable_details['en']['topic_label'].lower().strip()
         lookup = {
-                #"Ageing": "9731",
                 "demography":"6646",
                 "education": "3845",
-                #"Equalities": "7267",
                 "ethnic group, national identity, language and religion": "9497",
                 "health, disability and unpaid care": "4262",
-                #"Historic census": "8463",
                 "housing": "4128",
                 "international migration": "7755",
                 "labour market": "4994",
@@ -1221,34 +1635,209 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
                 }
         return lookup[topic_label]
     
+    def topic_lookup(self, topic):
+        # returns topic code from topic_dict
+        lookup = {
+                "demography":"6646",
+                "education": "3845",
+                "eilr": "9497",
+                "health": "4262",
+                "housing": "4128",
+                "international migration": "7755",
+                "labour market": "4994",
+                "sogi": "6885",
+                "travel to work": "9724",
+                "uk armed forces veterans": "7367"
+                }
+        return lookup[topic.lower()]
+    
     def get_metadata_version_number(self):
-        print(f"Using metadata from {location.split('/')[1]}")
+        print(f"Using metadata from {location}")
         
     def variable_links_text_builder(self, variable_details, language):
         # creates the section that has links to where the variable is used
-        # TODO 
-        # - get links & text for links
-        # - get Welsh
-        # - is it for all variables?
-        # - are variable_details needed - would mnemonic be enough?
-        # - implement method
-        if language == "en":
-            text = """
-### **Census 2021 data that uses this variable**
+        
+        if variable_details['en']['is_byo_only']:
+            if language == 'en':
+                text = """
+## **Census 2021 data that uses this variable**
+
+You can [create a custom dataset.](/datasets/create)
+
+"""
+            elif language == 'cy':
+                text = """
+## **Data Cyfrifiad 2021 sy’n defnyddio’r newidyn hwn**
+                
+Gallwch [greu set ddata wedi’i deilwra (yn Saesneg).](/datasets/create)
+"""
+            return text
+
+        variable_mnemonic = variable_details['en']['mnemonic']
+        variable_title = self.capitalise_text(variable_details[language]['title'].lower(), language)
+        
+        ts_dataset = self.datasets_dict[variable_mnemonic]['TS_dataset']
+        if ts_dataset == '':
+            ts_link = ''
+        else:
+            ts_link = self.datasets_dict[variable_mnemonic]['en'][ts_dataset]['url']
+            
+        if variable_mnemonic not in self.rich_content_links:
+            self.rich_content_links[variable_mnemonic] = {}
+            self.rich_content_links[variable_mnemonic]['census_maps_url'] = ''
+            self.rich_content_links[variable_mnemonic]['change_over_time_url'] = ''
+            self.rich_content_links[variable_mnemonic]['nomis_area_url'] = ''
+            
+        census_maps_url = self.rich_content_links[variable_mnemonic]['census_maps_url']
+        change_over_time_url = self.rich_content_links[variable_mnemonic]['change_over_time_url']
+        nomis_area_url = self.rich_content_links[variable_mnemonic]['nomis_area_url']
+
+        # if no links then leave empty
+        if ts_link == '' and census_maps_url == '' and change_over_time_url == '' and nomis_area_url == '':
+            top_section = False
+            text = ""
+        
+        elif language == "en":
+            top_section = True
+            text = f"""
+## **Census 2021 data that uses this variable**
 
 We use variables from Census 2021 data to show findings in different ways.
 
 You can:
-* [get the age dataset]()
-* [view the age data on a map]()
-* [read about how an area has changed in 10 years]()
-* [view age data for an area on Nomis (an Office for National Statistics service)]()
 
-**Other datasets that use this variable**
 """
         elif language == "cy":
-            text = """"""
+            top_section = True
+            text = f"""
+## **Data Cyfrifiad 2021 sy’n defnyddio’r newidyn hwn**
             
+Rydym yn defnyddio newidynnau o ddata Cyfrifiad 2021 i ddangos canfyddiadau mewn gwahanol ffyrdd.
+
+Gallwch chi:
+    
+"""
+        if ts_link:
+            if language == 'en':
+                url_text = f"get the {variable_title} dataset"
+            elif language == 'cy':
+                url_text = f"gael y set ddata {variable_title} (yn Saesneg)"
+                
+            text += f"* [{url_text}]({ts_link})  \n"
+            
+        if census_maps_url:
+            if language == 'en':
+                url_text = f"view {variable_title} data on a map"
+            elif language == 'cy':
+                url_text = f"weld data {variable_title} ar fap (yn Saesneg)"
+            
+            text += f"* [{url_text}]({census_maps_url})  \n"
+            
+        if change_over_time_url:
+            if language == 'en':
+                url_text = f"read about how an area has changed in 10 years"
+            elif language == 'cy':
+                url_text = f"ddarllen sut mae ardal wedi newid mewn 10 mlynedd (yn Saesneg)"
+            
+            text += f"* [{url_text}]({change_over_time_url})  \n"
+            
+        if nomis_area_url:
+            if language == 'en':
+                url_text = f"view {variable_title} data for an area on Nomis (an Office for National Statistics service)"
+            elif language == 'cy':
+                url_text = f"weld data {variable_title} ar gyfer ardal ar Nomis (gwasanaeth Swyddfa Ystadegau Gwladol) (yn Saesneg)"
+            
+            text += f"* [{url_text}]({nomis_area_url})  \n"
+            
+        if self.datasets_dict[variable_mnemonic]['has_byo_link']:
+            # adding byo link if rich content is included
+            if top_section == True:
+                if language == 'en':
+                    text += "\nAlternatively, you can also [create a custom dataset.](/datasets/create)  \n"
+                elif language == 'cy':
+                    text += "\nFel arall, gallwch hefyd [greu set ddata wedi’i deilwra (yn Saesneg).](/datasets/create)"
+            
+        # quick scan to see if any 'other' links should be included
+        for dataset_id in self.datasets_dict[variable_mnemonic]['en']:
+            if dataset_id == ts_dataset:
+                include_other_links = False
+                pass
+            else:
+                include_other_links = self.datasets_dict[variable_mnemonic]['en'][dataset_id]['include']
+                if include_other_links:
+                    break # only need 1 link to create new section
+        
+        if include_other_links:
+            if top_section == True:
+                if language == 'en':
+                    text += """
+### **Other datasets that use this variable**
+
+"""
+                elif language == 'cy':
+                    text += """
+### **Setiau data eraill sy’n defnyddio’r newidyn hwn**
+
+"""
+            elif  top_section == False:
+                if self.datasets_dict[variable_mnemonic]['has_byo_link']:
+                    if language == 'en':
+                        text += """
+## **Census 2021 data that uses this variable**
+
+You can [create a custom dataset.](/datasets/create)
+
+### **Other datasets that use this variable**
+
+"""
+                    if language == 'cy':
+                        text += """
+## **Data Cyfrifiad 2021 sy’n defnyddio’r newidyn hwn**
+
+Gallwch [greu set ddata wedi’i deilwra (yn Saesneg).](/datasets/create)
+
+### **Setiau data eraill sy’n defnyddio’r newidyn hwn**
+"""
+                else:
+                    
+                    if language == 'en':
+                        text += """
+## **Census 2021 data that uses this variable**
+
+"""
+                    elif language == 'cy':
+                        text += """
+## **Data Cyfrifiad 2021 sy’n defnyddio’r newidyn hwn**
+
+"""
+
+            for dataset_id in self.datasets_dict[variable_mnemonic]['en']:
+                if dataset_id == ts_dataset:
+                    pass
+                else:
+                    if self.datasets_dict[variable_mnemonic]['en'][dataset_id]['include']:
+                        url_text = self.datasets_dict[variable_mnemonic][language][dataset_id]['title']
+                        url_link = self.datasets_dict[variable_mnemonic]['en'][dataset_id]['url']
+                        if language == 'cy':
+                            url_text += ' (yn Saesneg)'
+                        text += f"* [{url_text}]({url_link}) \n"                
+
+        elif include_other_links == False and top_section == False:
+            if self.datasets_dict[variable_mnemonic]['has_byo_link']:
+                if language == 'en':
+                    text += """
+## **Census 2021 data that uses this variable**
+
+You can [create a custom dataset.](/datasets/create)
+
+"""
+                elif language == 'cy':
+                    text += """
+## **Data Cyfrifiad 2021 sy’n defnyddio’r newidyn hwn**
+
+Gallwch [greu set ddata wedi’i deilwra (yn Saesneg).](/datasets/create)
+
+"""
         return text
 
             
@@ -1258,3 +1847,45 @@ You can:
 
 if __name__ == '__main__':
     dd = data_dictionary_upload(environment, collection_name, pages_to_run, release_date)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
