@@ -32,9 +32,10 @@ def get_topic_dict(list_of_topics, **kwargs):
                                     "hrp_age": get_variable_title("hrp_age", 'en'),
                                     "concealed_family_type": get_variable_title("concealed_family_type", 'en'),
                                     "dependent_child_age": get_variable_title("dependent_child_age", 'en'),
+                                    "dependent_child_ind": get_variable_title("dependent_child_ind", 'en'),
                                     #"family_dependent_children": get_variable_title("family_dependent_children", 'en'),
                                     "hh_dependent_children": get_variable_title("hh_dependent_children", 'en'),
-                                    #"family_status": get_variable_title("family_status", 'en'),
+                                    "family_status": get_variable_title("family_status", 'en'),
                                     "family_status_by_workers_in_generation_1": get_variable_title("family_status_by_workers_in_generation_1", 'en'),
                                     #"families_and_children": get_variable_title("families_and_children", 'en'),
                                     "hh_family_composition": get_variable_title("hh_family_composition", 'en'),
@@ -99,9 +100,10 @@ def get_topic_dict(list_of_topics, **kwargs):
                                     "hrp_age": get_variable_title("hrp_age", 'cy'),
                                     "concealed_family_type": get_variable_title("concealed_family_type", 'cy'),
                                     "dependent_child_age": get_variable_title("dependent_child_age", 'cy'),
+                                    "dependent_child_ind": get_variable_title("dependent_child_ind", 'cy'),
                                     #"family_dependent_children": get_variable_title("family_dependent_children", 'cy'),
                                     "hh_dependent_children": get_variable_title("hh_dependent_children", 'cy'),
-                                    #"family_status": get_variable_title("family_status", 'cy'),
+                                    "family_status": get_variable_title("family_status", 'cy'),
                                     "family_status_by_workers_in_generation_1": get_variable_title("family_status_by_workers_in_generation_1", 'cy'),
                                     #"families_and_children": get_variable_title("families_and_children", 'cy'),
                                     "hh_family_composition": get_variable_title("hh_family_composition", 'cy'),
@@ -186,11 +188,14 @@ def get_topic_dict(list_of_topics, **kwargs):
                             "list_of_variables": {
                                     "hh_multi_ethnic_combination": get_variable_title("hh_multi_ethnic_combination", 'en'),
                                     "hh_multi_religion_combination": get_variable_title("hh_multi_religion_combination", 'en'),
+                                    "nat_id_cornish": get_variable_title("nat_id_cornish", 'en'),
                                     "ethnic_group_tb": get_variable_title("ethnic_group_tb", 'en'),
                                     "ethnic_group": get_variable_title("ethnic_group", 'en'),
                                     "hrp_ethnic_group_tb": get_variable_title("hrp_ethnic_group_tb", 'en'),
                                     "families_and_children_welsh_speaker_parents": get_variable_title("families_and_children_welsh_speaker_parents", 'en'),
                                     "hh_language": get_variable_title("hh_language", 'en'),
+                                    "jain_ind": get_variable_title("jain_ind", 'en'),
+                                    "jewish_ind": get_variable_title("jewish_ind", 'en'),
                                     "main_language": get_variable_title("main_language", 'en'),
                                     "main_language_detailed": get_variable_title("main_language_detailed", 'en'),
                                     "hh_multi_ethnic_group": get_variable_title("hh_multi_ethnic_group", 'en'),
@@ -200,8 +205,10 @@ def get_topic_dict(list_of_topics, **kwargs):
                                     "national_identity_detailed": get_variable_title("national_identity_detailed", 'en'),
                                     "welsh_speaking_3_plus": get_variable_title("welsh_speaking_3_plus", 'en'),
                                     "english_proficiency": get_variable_title("english_proficiency", 'en'),
+                                    "ravidassia_ind": get_variable_title("ravidassia_ind", 'en'),
                                     "religion_tb": get_variable_title("religion_tb", 'en'),
                                     "religion": get_variable_title("religion", 'en'),
+                                    "sikh_ind": get_variable_title("sikh_ind", 'en'),
                                     "welsh_skills_all": get_variable_title("welsh_skills_all", 'en'),
                                     "welsh_skills_read": get_variable_title("welsh_skills_read", 'en'),
                                     "hh_welsh_speak_3_plus": get_variable_title("hh_welsh_speak_3_plus", 'en'),
@@ -222,11 +229,14 @@ def get_topic_dict(list_of_topics, **kwargs):
                             "list_of_variables": {
                                     "hh_multi_ethnic_combination": get_variable_title("hh_multi_ethnic_combination", 'cy'),
                                     "hh_multi_religion_combination": get_variable_title("hh_multi_religion_combination", 'cy'),
+                                    "nat_id_cornish": get_variable_title("nat_id_cornish", 'cy'),
                                     "ethnic_group_tb": get_variable_title("ethnic_group_tb", 'cy'),
                                     "ethnic_group": get_variable_title("ethnic_group", 'cy'),
                                     "hrp_ethnic_group_tb": get_variable_title("hrp_ethnic_group_tb", 'cy'),
                                     "families_and_children_welsh_speaker_parents": get_variable_title("families_and_children_welsh_speaker_parents", 'cy'),
                                     "hh_language": get_variable_title("hh_language", 'cy'),
+                                    "jain_ind": get_variable_title("jain_ind", 'cy'),
+                                    "jewish_ind": get_variable_title("jewish_ind", 'cy'),
                                     "main_language": get_variable_title("main_language", 'cy'),
                                     "main_language_detailed": get_variable_title("main_language_detailed", 'cy'),
                                     "hh_multi_ethnic_group": get_variable_title("hh_multi_ethnic_group", 'cy'),
@@ -236,8 +246,10 @@ def get_topic_dict(list_of_topics, **kwargs):
                                     "national_identity_detailed": get_variable_title("national_identity_detailed", 'cy'),
                                     "welsh_speaking_3_plus": get_variable_title("welsh_speaking_3_plus", 'cy'),
                                     "english_proficiency": get_variable_title("english_proficiency", 'cy'),
+                                    "ravidassia_ind": get_variable_title("ravidassia_ind", 'cy'),
                                     "religion_tb": get_variable_title("religion_tb", 'cy'),
                                     "religion": get_variable_title("religion", 'cy'),
+                                    "sikh_ind": get_variable_title("sikh_ind", 'cy'),
                                     "welsh_skills_all": get_variable_title("welsh_skills_all", 'cy'),
                                     "welsh_skills_read": get_variable_title("welsh_skills_read", 'cy'),
                                     "hh_welsh_speak_3_plus": get_variable_title("hh_welsh_speak_3_plus", 'cy'),
@@ -365,9 +377,11 @@ def get_topic_dict(list_of_topics, **kwargs):
                                     "age_arrival_uk": get_variable_title("age_arrival_uk", 'en'),
                                     "country_of_birth": get_variable_title("country_of_birth", 'en'),
                                     "country_of_birth_extended": get_variable_title("country_of_birth_extended", 'en'),
+                                    "intention_to_stay": get_variable_title("intention_to_stay", 'en'),
                                     "residence_length": get_variable_title("residence_length", 'en'),
                                     "migrant_ind": get_variable_title("migrant_ind", 'en'),
                                     "multi_passports": get_variable_title("multi_passports", 'en'),
+                                    "other_passport_held": get_variable_title("other_passport_held", 'en'),
                                     "passports_all": get_variable_title("passports_all", 'en'),
                                     "year_arrival_uk": get_variable_title("year_arrival_uk", 'en')
                                     }
@@ -382,9 +396,11 @@ def get_topic_dict(list_of_topics, **kwargs):
                                     "age_arrival_uk": get_variable_title("age_arrival_uk", 'cy'),
                                     "country_of_birth": get_variable_title("country_of_birth", 'cy'),
                                     "country_of_birth_extended": get_variable_title("country_of_birth_extended", 'cy'),
+                                    "intention_to_stay": get_variable_title("intention_to_stay", 'cy'),
                                     "residence_length": get_variable_title("residence_length", 'cy'),
                                     "migrant_ind": get_variable_title("migrant_ind", 'cy'),
                                     "multi_passports": get_variable_title("multi_passports", 'cy'),
+                                    "other_passport_held": get_variable_title("other_passport_held", 'cy'),
                                     "passports_all": get_variable_title("passports_all", 'cy'),
                                     "year_arrival_uk": get_variable_title("year_arrival_uk", 'cy')
                                     }
@@ -403,6 +419,7 @@ def get_topic_dict(list_of_topics, **kwargs):
                                     "economic_activity_hours_worked": get_variable_title("economic_activity_hours_worked", 'en'),
                                     "activity_last_week": get_variable_title("activity_last_week", 'en'),
                                     "hrp_economic_activity": get_variable_title("hrp_economic_activity", 'en'),
+                                    "economic_category": get_variable_title("economic_category", 'en'),
                                     "has_ever_worked": get_variable_title("has_ever_worked", 'en'),
                                     "hours_per_week_worked": get_variable_title("hours_per_week_worked", 'en'),
                                     "industry_current": get_variable_title("industry_current", 'en'),
@@ -427,6 +444,7 @@ def get_topic_dict(list_of_topics, **kwargs):
                                     "economic_activity_hours_worked": get_variable_title("economic_activity_hours_worked", 'cy'),
                                     "activity_last_week": get_variable_title("activity_last_week", 'cy'),
                                     "hrp_economic_activity": get_variable_title("hrp_economic_activity", 'cy'),
+                                    "economic_category": get_variable_title("economic_category", 'cy'),
                                     "has_ever_worked": get_variable_title("has_ever_worked", 'cy'),
                                     "hours_per_week_worked": get_variable_title("hours_per_week_worked", 'cy'),
                                     "industry_current": get_variable_title("industry_current", 'cy'),
@@ -540,4 +558,50 @@ def get_topic_dict(list_of_topics, **kwargs):
                     del topic_dict[topic]['cy']['list_of_variables'][variable]
     
     return topic_dict
+
+
+def topic_return(list_of_variables):
+    assert type(list_of_variables) == list, "list_of_variables must be a list"
+    topic_dict = get_topic_dict(["*"])
+    
+    variable_and_topic_dict = {}
+    
+    for variable in list_of_variables:
+        variable_assigned = False
+        
+        for topic in topic_dict:
+            if variable in topic_dict[topic]['en']['list_of_variables']:
+                if topic in variable_and_topic_dict:
+                    variable_and_topic_dict[topic].append(variable)
+                else:
+                    variable_and_topic_dict[topic] = [variable]
+                
+                variable_assigned = True
+                
+        if variable_assigned == False:
+            print(f"{variable} does not exist in get_topic_dict")
+                    
+    return variable_and_topic_dict
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 

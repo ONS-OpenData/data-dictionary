@@ -2,9 +2,10 @@ import datetime, os, time, requests
 from cantabular_request import get_variable_details, get_measurements_used_dict, get_datasets_dict, get_rich_content_dict, get_area_type_dict, check_byo_only_variables, location
 from data_dict_dicts import get_topic_dict
 
-environment = "test"
+
+environment = "prod"
 collection_name = "Data dictionary update"
-release_date = '06/09/23' # use dd/mm/yy, leave empty for todays date
+release_date = '' # use dd/mm/yy, leave empty for todays date
 
 list_of_all_topics = [
         'demography', 'international migration', 'UK armed forces veterans', 
@@ -19,60 +20,11 @@ pages_to_run = {
         "area_type_definitions_page": False, # only True/False
         "list_of_variables_landing_page": False, # only - True/False
         "variables_page": True, # only - True/False
-        "classifications_page": True, # only - True/False
-        "topics": ["demography"] , # * for all, otherwise specify
-        "variables": ['resident_age', 'sex', 'hh_dependent_children', 'hrp_age', 'family_status', 'hh_family_composition',
-        'migration_country_inflow', 'migration_country_outflow', 
-        'migration_lsoa_inflow', 'migration_lsoa_outflow', 
-        'migration_national_inflow',
-        'migration_ltla_inflow', 'migration_ltla_outflow',
-        'migration_msoa_inflow', 'migration_msoa_outflow',
-        'migration_region_inflow', 'migration_region_outflow', 
-        'migration_utla_inflow', 'migration_utla_outflow',
-        'migration_oa_inflow', 'migration_oa_outflow', 
-        'hh_migration_ltla_inflow', 'hh_migration_ltla_outflow',
-        'hh_migration_region_inflow','hh_migration_region_outflow', 
-        'hh_migration_country_inflow','hh_migration_country_outflow',
-        'hh_migration_national_inflow', 
-        'hh_migration_msoa_inflow', 'hh_migration_msoa_outflow',
-        'hh_migration_utla_inflow', 'hh_migration_utla_outflow'] # * for all, otherwise specify
+        "classifications_page": False, # only - True/False
+        "topics": ["sogi"] , # * for all, otherwise specify
+        "variables": ["sexual_orientation"] # * for all, otherwise specify
         }
 
-"""
-'demography': 
-    'resident_age', 'sex', 'hh_dependent_children', 'hrp_age', 'family_status', 'hh_family_composition',
-    'migration_country_inflow', 'migration_country_outflow', 
-    'migration_lsoa_inflow', 'migration_lsoa_outflow', 
-    'migration_national_inflow',
-    'migration_ltla_inflow', 'migration_ltla_outflow',
-    'migration_msoa_inflow', 'migration_msoa_outflow',
-    'migration_region_inflow', 'migration_region_outflow', 
-    'migration_utla_inflow', 'migration_utla_outflow',
-    'migration_oa_inflow', 'migration_oa_outflow', 
-    
-    'hh_migration_ltla_inflow', 'hh_migration_ltla_outflow',
-    'hh_migration_region_inflow','hh_migration_region_outflow', 
-    'hh_migration_country_inflow','hh_migration_country_outflow',
-    'hh_migration_national_inflow', 
-    'hh_migration_msoa_inflow', 'hh_migration_msoa_outflow',
-    'hh_migration_utla_inflow', 'hh_migration_utla_outflow', 
-    
-    
-'labour market': 
-    'ns_sec', 'hrp_ns_sec', 'hrp_economic_activity', 'hours_per_week_worked', 'economic_activity',
-    
-'health':
-    'disability',
-    
-'housing':
-    'hh_tenure',
-    
-'eilr':
-    'ethnic_group_tb',
-    
-'sogi':
-    'gender_identity',
-"""
 
 
 class making_request():
@@ -925,10 +877,14 @@ Ar gyfer lefelau uwch o ardaloedd daearyddol, gellir cynhyrchu ystadegau manylac
                 "Local health boards", "Integrated care boards",  "Sub integrated care board locations", 
                 "2023 Upper tier local authorities", "2023 Lower tier local authorities",
                 "Upper tier local authorities", "Lower tier local authorities", 
+                "Post-2019 Westminster Parliamentary constituencies",
                 "Westminster Parliamentary constituencies", "Electoral wards and divisions", "Parishes",
-                #"Senedd electoral regions", 
-                "Senedd constituencies", "Middle layer Super Output Areas", 
-                "Lower layer Super Output Areas", "Output Areas", "Local enterprise partnerships", "National Parks"
+                "Senedd electoral regions", "Senedd constituencies", "Middle layer Super Output Areas", 
+                "Lower layer Super Output Areas", "Output Areas", "Local enterprise partnerships", "National Parks",
+                "Migrant country one year ago", "Migrant region one year ago", "Migrant UTLA one year ago",
+                "Migrant LTLA one year ago", "Migrant MSOA one year ago", "Migrant LSOA one year ago",
+                "Output area of migrant origin", "Migrant country one year ago (10 categories) (detailed)",
+                "Migrant country one year ago (60 categories) (detailed)"
                 ):
             
             area_dict = get_area_type_dict(area)
@@ -1217,6 +1173,8 @@ Cyfanswm nifer y categorïau: {no_of_categories}
         
         classification_mnemonic = variable_details['en']['preferred_classification']
         
+        has_na_label = variable_details['en']['classifications'][classification_mnemonic]['has_na_label']
+        
         # does this variable have multiple classifications
         if multiple_classifications:
             topic = self.slugize(variable_details['en']['topic_label'])
@@ -1235,6 +1193,14 @@ Cyfanswm nifer y categorïau: {no_of_categories}
             for key in variable_details['en']['classifications'][classification_mnemonic]['category'].keys():
                 text += f"| {key} | {variable_details['en']['classifications'][classification_mnemonic]['category'][key]} | \n"
             
+            # adding in -8 notes
+            if has_na_label:
+                text = text.replace('Does not apply', 'Does not apply*')
+                na_text = variable_details['en']['classifications'][classification_mnemonic]['na_label']
+                na_text = na_text.split('The "Does not apply" category consists of ')[-1]
+                na_text = f"{na_text[0].upper()}{na_text[1:]}"
+                text += f"\*{na_text} \n"
+            
             if multiple_classifications:
                 text += f"\nView all [{self.capitalise_text(variable_details['en']['title'].lower(), 'en')} classifications.]({multi_classifications_link}) \n"
             
@@ -1246,6 +1212,14 @@ Cyfanswm nifer y categorïau: {no_of_categories}
 """
             for key in variable_details['cy']['classifications'][classification_mnemonic]['category'].keys():
                 text += f"| {key} | {variable_details['cy']['classifications'][classification_mnemonic]['category'][key]} | \n"
+            
+            # adding in -8 notes
+            if has_na_label:
+                text = text.replace('Ddim yn gymwys', 'Ddim yn gymwys*')
+                na_text = variable_details['cy']['classifications'][classification_mnemonic]['na_label']
+                na_text = na_text.split("Mae'r categori \"Ddim yn gymwys\" yn cynnwys ")[-1]
+                na_text = f"{na_text[0].upper()}{na_text[1:]}"
+                text += f"\*{na_text} \n"
             
             if multiple_classifications:
                 text += f"\nGweld pob [dosbarthiad {self.capitalise_text(variable_details['cy']['title'].lower(), 'cy')}.]({multi_classifications_link}) \n"
@@ -1493,6 +1467,15 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
             if "household reference person" in text:
                 text = text.replace("household reference person", "Household Reference Person")
                 
+            if 'jewish' in text:
+                text = text.replace('jewish', 'Jewish')
+                
+            if 'sikh' in text:
+                text = text.replace('sikh', 'Sikh')
+                
+            if 'cornish' in text:
+                text = text.replace('cornish', 'Cornish')
+                
         elif language == 'cy':
             if "deyrnas unedig" in text:
                 text = text.replace("deyrnas unedig", "Deyrnas Unedig")
@@ -1536,6 +1519,15 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
             if 'person cyswllt y cartref' in text:
                 text = text.replace("person cyswllt y cartref", "Person Cyswllt y Cartref")
                 
+            if 'iddewig' in text:
+                text = text.replace('iddewig', 'Iddewig')
+                
+            if 'sicaidd' in text:
+                text = text.replace('sicaidd', 'Sicaidd')
+                
+            if 'gernywaidd' in text:
+                text = text.replace('gernywaidd', 'Gernywaidd')
+                
         if text.lower() == "national statistics socio-economic classification (ns-sec)":
             text = "National Statistics Socio-economic Classification (NS-SEC)"
             
@@ -1548,6 +1540,12 @@ Mae rhai materion ansawdd yn y data a allai effeithio ar sut rydych chi’n defn
         if text.lower() == "person cyswllt y cartref wedi gwasanaethu yn lluoedd arfog y deyrnas unedig yn y gorffennol":
             text = "Person Cyswllt y Cartref wedi gwasanaethu yn lluoedd arfog y Deyrnas Unedig yn y gorffennol"
         
+        if 'jain' in text:
+            text = text.replace('jain', 'Jain')
+            
+        if 'ravidassia' in text:
+            text = text.replace('ravidassia', 'Ravidassia')
+            
         return text
     
     def variable_title(self, page_title, language, page_type):
@@ -1766,6 +1764,11 @@ Gallwch chi:
                 include_other_links = self.datasets_dict[variable_mnemonic]['en'][dataset_id]['include']
                 if include_other_links:
                     break # only need 1 link to create new section
+                    
+        if variable_mnemonic == 'other_passport_held':
+            # TODO - hacky way of giving variable include_other_links=False
+            # this variable is not used anywhere so this is what is causing problem
+            include_other_links = False
         
         if include_other_links:
             if top_section == True:
@@ -1847,45 +1850,4 @@ Gallwch [greu set ddata wedi’i deilwra (yn Saesneg).](/datasets/create)
 
 if __name__ == '__main__':
     dd = data_dictionary_upload(environment, collection_name, pages_to_run, release_date)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

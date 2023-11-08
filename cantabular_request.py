@@ -3,10 +3,10 @@ import pandas as pd
 import datetime
 
 # points to folder of metadata csvs
-location = "cantabular/ar2776-c21ew_metadata-v1-5_cantab_20230905-66/"
+location = "cantabular/ar2776-c21ew_metadata-v1-5_cantab_20231017-69/"
 
 def run():
-    variable = "hrp_economic_activity"
+    variable = "sexual_orientation"
     variable_details = get_variable_details(variable)
     return variable_details
 
@@ -99,6 +99,21 @@ def get_variable_details(variable):
         variable_details['cy']['classifications'][classification]['label'] = welsh_label
         variable_details['en']['classifications'][classification]['category'] = dict(zip(df_classification['Category_Code'], df_classification['External_Category_Label_English']))
         variable_details['cy']['classifications'][classification]['category'] = dict(zip(df_classification['Category_Code'], df_classification['External_Category_Label_Welsh']))
+        
+        if pd.isnull(df_classification_labels['Not_Applicable_Category_Description'].iloc[0]):
+            variable_details['en']['classifications'][classification]['has_na_label'] = False
+            
+        elif df_classification_labels['Not_Applicable_Category_Description'].iloc[0] == '':
+            variable_details['en']['classifications'][classification]['has_na_label'] = False
+        
+        else:
+            na_label = df_classification_labels['Not_Applicable_Category_Description'].iloc[0]
+            na_label_welsh = df_classification_labels['Not_Applicable_Category_Description_Welsh'].iloc[0]
+            assert len(na_label) > 1, f"picking up an na label for {classification} that has no length"
+            
+            variable_details['en']['classifications'][classification]['has_na_label'] = True
+            variable_details['en']['classifications'][classification]['na_label'] = na_label
+            variable_details['cy']['classifications'][classification]['na_label'] = na_label_welsh
         
     #assert str(len(variable_details['en']['classifications'].keys())) == variable_details['en']['number of classifications'], f"number of classifications stated {variable_details['en']['number of classifications']} does not match number found {len(variable_details['en']['classifications'].keys())}"
     del df, df_classification, category_df, classification_df, df_classification_labels, english_label, welsh_label
@@ -328,6 +343,15 @@ def classification_to_use(mnemonic):
             "hrp_age": "hrp_age_4a",
             "hrp_economic_activity": "hrp_economic_activity_status_10a",
             "hrp_ns_sec": "hrp_ns_sec_10a",
+            "jain_ind": "jain_ind",
+            "sikh_ind": "sikh_ind",
+            "jewish_ind": "jewish_ind",
+            "nat_id_cornish": "nat_id_cornish",
+            "ravidassia_ind": "ravidassia_ind",
+            "economic_category": "economic_category",
+            "dependent_child_ind": "dependent_child_ind",
+            "other_passport_held": "other_passport_held",
+            "intention_to_stay": "intention_to_stay",
             }
     
     if mnemonic not in lookup.keys():
@@ -353,9 +377,13 @@ def multi_classifications(mnemonic):
     # some variables will use more than one classification
     lookup = {
             'accommodation_type': ['accommodation_type', 'accommodation_type_7a', 'accommodation_type_5a', 'accommodation_type_3a', 'accommodation_type_2a'],
-            'country_of_birth': ['country_of_birth_66a', 'country_of_birth_60a', 'country_of_birth_25a', 'country_of_birth_22a', 'country_of_birth_13a', 'country_of_birth_12a', 'country_of_birth_8a', 'country_of_birth_3a'],
+            'country_of_birth': ['country_of_birth', 'country_of_birth_66a', 'country_of_birth_60a', 'country_of_birth_25a', 'country_of_birth_22a', 'country_of_birth_13a', 'country_of_birth_12a', 'country_of_birth_8a', 'country_of_birth_3a'],
             'disability': ['disability', 'disability_4a', 'disability_3a'],
-            'economic_activity': ['economic_activity', 'economic_activity_status_12a', 'economic_activity_status_10a', 'economic_activity_status_7a', 'economic_activity_status_4a', 'economic_activity_status_3a'],
+            'economic_activity': [
+                    'economic_activity', 'economic_activity_status_12a', 'economic_activity_status_10a', 'economic_activity_status_10b', 
+                    'economic_activity_status_9a', 'economic_activity_status_9b', 'economic_activity_status_7a', 'economic_activity_status_7b', 
+                    'economic_activity_status_4a', 'economic_activity_status_3a'
+                    ],
             'english_proficiency': ['english_proficiency', 'english_proficiency_5a', 'english_proficiency_4a'],
             'ethnic_group_tb': ['ethnic_group_tb_20b', 'ethnic_group_tb_8a', 'ethnic_group_tb_6a'],
             'gender_identity': ['gender_identity_8a', 'gender_identity_7a', 'gender_identity_4a'],
@@ -365,27 +393,27 @@ def multi_classifications(mnemonic):
             'hh_multi_language': ['hh_multi_language', 'hh_multi_language_3a'],
             'hh_size': ['hh_size_9a', 'hh_size_7a', 'hh_size_5a', 'hh_size_2a'],
             'hh_tenure': ['hh_tenure', 'hh_tenure_9a', 'hh_tenure_7a', 'hh_tenure_7b', 'hh_tenure_5a', 'hh_tenure_4a'],
-            'highest_qualification': ['highest_qualification', 'highest_qualification_7a', 'highest_qualification_6a'],
+            'highest_qualification': ['highest_qualification', 'highest_qualification_7a', 'highest_qualification_6a', 'highest_qualification_5a'],
             'hours_per_week_worked': ['hours_per_week_worked', 'hours_per_week_worked_3a'],
-            'industry_current': ['industry_current_88a', 'industry_current_22a', 'industry_current_19a', 'industry_current_16a', 'industry_current_9a'],
-            'is_carer': ['is_carer', 'is_carer_5a'],
+            'industry_current': ['industry_current_88a', 'industry_current_29a', 'industry_current_22a', 'industry_current_19a', 'industry_current_16a', 'industry_current_9a'],
+            'is_carer': ['is_carer', 'is_carer_5a', 'is_carer_3a'],
             'legal_partnership_status': ['legal_partnership_status', 'legal_partnership_status_7a', 'legal_partnership_status_6a', 'legal_partnership_status_3a'],
             'main_language_detailed': ['main_language_detailed', 'main_language_detailed_26a', 'main_language_detailed_23a'],
             'national_identity_all': ['national_identity_all', 'national_identity_all_9a', 'national_identity_all_4a'],
             'number_of_cars': ['number_of_cars_6a', 'number_of_cars_5a', 'number_of_cars_4a', 'number_of_cars_3a'],
-            'occupation_current': ['occupation_current_105a', 'occupation_current_27a', 'occupation_current_10a'],
-            'passports_all': ['passports_all_52a', 'passports_all_27a', 'passports_all_18a', 'passports_all_13a', 'passports_all_11a', 'passports_all_4a'],
+            'occupation_current': ['occupation_current', 'occupation_current_105a', 'occupation_current_27a', 'occupation_current_10a'],
+            'passports_all': ['passports_all_52a', 'passports_all_27a', 'passports_all_18a', 'passports_all_13a', 'passports_all_11a', 'passports_all_7a', 'passports_all_4a'],
             'resident_age': [
-                    'resident_age_101a', 'resident_age_91a', 'resident_age_86a', 'resident_age_61a', 'resident_age_23a', 'resident_age_18a', 'resident_age_18b', 
-                    'resident_age_17a', 'resident_age_14a', 'resident_age_14b', 'resident_age_13a', 'resident_age_12a', 'resident_age_12b', 'resident_age_12c', 
+                    'resident_age_101a', 'resident_age_91a', 'resident_age_86a', 'resident_age_61a', 'resident_age_23a', 'resident_age_23b', 'resident_age_18a', 'resident_age_18b', 
+                    'resident_age_17a', 'resident_age_16a', 'resident_age_14a', 'resident_age_14b', 'resident_age_13a', 'resident_age_12a', 'resident_age_12b', 'resident_age_12c', 
                     'resident_age_11a', 'resident_age_11b', 'resident_age_11c', 'resident_age_11d', 'resident_age_10a', 'resident_age_10b', 'resident_age_9a', 
-                    'resident_age_8a', 'resident_age_8b', 'resident_age_8c', 'resident_age_8d', 'resident_age_7a', 'resident_age_7b', 'resident_age_7d', 'resident_age_7f',
-                    'resident_age_6a', 'resident_age_6b', 'resident_age_5a', 'resident_age_5b', 'resident_age_5c', 'resident_age_5d', 
+                    'resident_age_8a', 'resident_age_8b', 'resident_age_8c', 'resident_age_8d', 'resident_age_8e', 'resident_age_7a', 'resident_age_7b', 'resident_age_7d', 'resident_age_7f',
+                    'resident_age_6a', 'resident_age_6b', 'resident_age_6f', 'resident_age_5a', 'resident_age_5b', 'resident_age_5c', 'resident_age_5d', 'resident_age_5e',
                     'resident_age_4a', 'resident_age_4b', 'resident_age_4c', 'resident_age_3a', 'resident_age_3b', 'resident_age_3c', 'resident_age_3d', 'resident_age_2a'
                     ],
             'sexual_orientation': ['sexual_orientation_9a', 'sexual_orientation_6a', 'sexual_orientation_4a'],
             'welsh_skills_all': ['welsh_skills_all', 'welsh_skills_all_8a', 'welsh_skills_all_6a', 'welsh_skills_all_4a', 'welsh_skills_all_4b'],
-            'workplace_travel': ['workplace_travel', 'workplace_travel_10a', 'workplace_travel_8a', 'workplace_travel_5a', 'workplace_travel_4a'],
+            'workplace_travel': ['workplace_travel', 'workplace_travel_10a', 'workplace_travel_8a', 'workplace_travel_6a', 'workplace_travel_5a', 'workplace_travel_4a'],
             'year_arrival_uk': ['year_arrival_uk', 'year_arrival_uk_11a', 'year_arrival_uk_6a'],
             'dependent_child_age': ['dependent_child_age_6a', 'dependent_child_age_4a', 'dependent_child_age_3a'],
             'families_and_children': ['families_and_children_9a', 'families_and_children_7a', 'families_and_children_3a'],
@@ -406,16 +434,20 @@ def multi_classifications(mnemonic):
             'hh_multi_religion_combination': ['hh_multi_religion_combination', 'hh_multi_religion_combination_6a'],
             'hh_veterans': ['hh_veterans_5a', 'hh_veterans_4a', 'hh_veterans_3a'],
             'industry_former': ['industry_former_17a', 'industry_former_10a'],
-            'main_language': ['main_language_23a', 'main_language_11a'],
+            'main_language': ['main_language', 'main_language_23a', 'main_language_11a'],
             'multi_passports': ['multi_passports', 'multi_passports_9a'],
-            'ns_sec': ['ns_sec', 'ns_sec_12a', 'ns_sec_10a'],
+            'ns_sec': ['ns_sec', 'ns_sec_16a', 'ns_sec_12a', 'ns_sec_10a'],
             'number_bedrooms': ['number_bedrooms_6a', 'number_bedrooms_5a'],
             'religion_tb': ['religion_tb', 'religion_tb_5a'],
             'resident_age_extended': ['resident_age_extended_17a', 'resident_age_extended_14b', 'resident_age_extended_8b', 'resident_age_extended_3d'],
             'transport_to_workplace': ['transport_to_workplace_12a', 'transport_to_workplace_5a'],
             'welsh_speaking_dependent_child': ['welsh_speaking_dependent_child', 'welsh_speaking_dependent_child_3a'],
             'hh_multi_religion': ['hh_multi_religion', 'hh_multi_religion_7a'],
-            'adult_lifestage': ['adult_lifestage_12a', 'adult_lifestage_11a', 'adult_lifestage_9a']
+            'adult_lifestage': ['adult_lifestage_12a', 'adult_lifestage_11a', 'adult_lifestage_9a'],
+            'ethnic_group': ['ethnic_group', 'ethnic_group_288a'],
+            'religion': ['religion', 'religion_58a'],
+            'second_address_type_priority': ['second_address_type_priority', 'second_address_type_priority_4a', 'second_address_type_priority_3a'],
+            'place_of_work_ind': ['place_of_work_ind', 'place_of_work_ind_4a']
             }
     
     return lookup.get(mnemonic, '')
@@ -504,7 +536,7 @@ def get_datasets_dict():
                 else:
                     # TODO - make more robust
                     #todays_date = datetime.datetime.now()
-                    todays_date = datetime.datetime(2023, 9, 7)
+                    todays_date = datetime.datetime(2023, 10, 27)
                     if publish_date < todays_date: # ie publish date has passed
                         to_include = 'Yes'
             
@@ -552,6 +584,8 @@ def get_rich_content_dict():
 def get_area_type_dict(area):
     variable_df = pd.read_csv(f"{location}Variable.csv", dtype=str)
     df = variable_df[variable_df["Variable_Title"] == area]
+    if len(df) == 2:
+        df = df[df['Variable_Type_Code'] == 'GEOG']
     assert len(df) == 1, f"df has length {len(df)} for {area} - should be unique"
     
     area_dict = {
@@ -580,7 +614,7 @@ def byo_only_variables():
             "hh_multi_religion_combination", "hh_no_condition", "hh_not_limited",
             "hh_number_limited_little", "hh_number_limited_lot", "hh_persons_per_bedroom",
             "hh_welsh_speaking_adults", "industry_former", "main_language", "multi_passports",
-            "occupation_former", "place_of_work_ind", "position_in_ce", "resident_age_extended",
+            "occupation_former", "position_in_ce", "resident_age_extended",
             "welsh_speaking_3_plus", "workers_transport"
             )
     return byo_variables
